@@ -1,0 +1,147 @@
+<!-- 
+╔═══════════════════════════════════════════════════════════════════╗
+║  JOBPILOT — Resume Template: Original Style                      ║
+║                                                                   ║
+║  Mimics Rishi's current LaTeX-formatted resume style:             ║
+║  - Clean, academic-style layout                                  ║
+║  - Horizontal rules between sections                             ║
+║  - Compact bullet points                                         ║
+║  - Sans-serif font similar to LaTeX \sffamily                    ║
+║                                                                   ║
+║  Rendered by Jinja2 → WeasyPrint → PDF                            ║
+╚═══════════════════════════════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Source Sans Pro', 'Helvetica Neue', sans-serif;
+        font-size: 10pt;
+        line-height: 1.35;
+        color: #1a1a1a;
+        max-width: 210mm;
+        padding: 15mm 18mm;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 8px; }
+    .header h1 { font-size: 20pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .header .contact {
+        font-size: 9pt; color: #333;
+    }
+    .header .contact a { color: #0066cc; text-decoration: none; }
+
+    /* ── Section dividers ── */
+    hr { border: none; border-top: 1.2px solid #1a1a1a; margin: 8px 0 6px 0; }
+
+    /* ── Section headers ── */
+    .section-title {
+        font-size: 11pt; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.8px; margin-bottom: 4px;
+    }
+
+    /* ── Experience entries ── */
+    .entry { margin-bottom: 8px; }
+    .entry-header {
+        display: flex; justify-content: space-between; align-items: baseline;
+        margin-bottom: 2px;
+    }
+    .entry-header .company { font-weight: 700; font-size: 10.5pt; }
+    .entry-header .duration { font-size: 9pt; color: #444; }
+    .entry-role { font-style: italic; font-size: 9.5pt; color: #333; margin-bottom: 3px; }
+
+    /* ── Bullet points ── */
+    ul { padding-left: 16px; margin: 2px 0; }
+    li { margin-bottom: 2px; font-size: 9.5pt; line-height: 1.4; }
+    li::marker { color: #555; }
+
+    /* ── Skills ── */
+    .skills-grid { font-size: 9.5pt; }
+    .skills-grid .label { font-weight: 600; }
+
+    /* ── Education ── */
+    .education { font-size: 9.5pt; }
+
+    /* ── Achievements ── */
+    .achievements li { font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>{{ name }}</h1>
+    <div class="contact">
+        rishiraj727909.work@gmail.com | +91-8210239176 |
+        <a href="#">LinkedIn</a> | <a href="#">GitHub</a>
+    </div>
+</div>
+
+<!-- Professional Summary -->
+{% if summary %}
+<hr>
+<div class="section-title">Summary</div>
+<p style="font-size: 9.5pt; margin-bottom: 4px;">{{ summary }}</p>
+{% endif %}
+
+<!-- Experience -->
+{% if experience %}
+<hr>
+<div class="section-title">Experience</div>
+{% for exp in experience %}
+<div class="entry">
+    <div class="entry-header">
+        <span class="company">{{ exp.company }}</span>
+        <span class="duration">{{ exp.duration }}</span>
+    </div>
+    <div class="entry-role">{{ exp.role }}</div>
+    <ul>
+        {% for bullet in exp.bullets %}
+        <li>{{ bullet }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Education -->
+{% if education %}
+<hr>
+<div class="section-title">Education</div>
+<div class="education">
+    <div class="entry-header">
+        <span class="company">{{ education.institution }}</span>
+        <span class="duration">{{ education.details }}</span>
+    </div>
+    <div class="entry-role">{{ education.degree }}</div>
+</div>
+{% endif %}
+
+<!-- Skills -->
+{% if skills %}
+<hr>
+<div class="section-title">Programming Skills</div>
+<div class="skills-grid">
+    <span class="label">Technologies:</span> {{ skills | join(', ') }}
+</div>
+{% endif %}
+
+<!-- Achievements -->
+{% if achievements %}
+<hr>
+<div class="section-title">Achievements</div>
+<ul class="achievements">
+    {% for ach in achievements %}
+    <li>{{ ach }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+</body>
+</html>

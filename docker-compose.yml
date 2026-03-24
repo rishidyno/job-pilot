@@ -1,0 +1,78 @@
+# ╔═══════════════════════════════════════════════════════════════════╗
+# ║  JOBPILOT — Docker Compose                                       ║
+# ║                                                                   ║
+# ║  Usage:                                                           ║
+# ║    docker-compose up -d mongodb     # Just MongoDB                ║
+# ║    docker-compose up --build        # Full stack                  ║
+# ╚═══════════════════════════════════════════════════════════════════╝
+
+version: "3.9"
+
+services:
+  # ─────────────────────────────────────
+  # MongoDB — Primary data store
+  # ─────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    container_name: jobpilot-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      # Persist data across container restarts
+      - mongodb_data:/data/db
+    environment:
+      # No auth for local dev — add MONGO_INITDB_ROOT_USERNAME/PASSWORD for production
+      MONGO_INITDB_DATABASE: jobpilot
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────
+  # FastAPI Backend
+  # ─────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobpilot-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Mount data directory for resume/cover letter storage
+      - ./data:/app/data
+      # Mount backend source for hot-reload in dev
+      - ./backend:/app
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ─────────────────────────────────────
+  # React Frontend
+  # ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jobpilot-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  mongodb_data:
+    driver: local

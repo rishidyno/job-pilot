@@ -1,0 +1,17 @@
+/* JOBPILOT — Global Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Smooth transitions globally */
+* { transition-property: color, background-color, border-color, opacity, box-shadow; transition-duration: 150ms; }
+
+/* Score ring animation */
+@keyframes score-fill { from { stroke-dashoffset: 100; } }
+.score-ring { animation: score-fill 1s ease-out; }
