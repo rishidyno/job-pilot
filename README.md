@@ -2,9 +2,6 @@
 
 > A self-hosted, intelligent job hunting tool that scrapes jobs from multiple portals, tailors your resume & cover letter using Claude AI, tracks every application in MongoDB, and auto-applies — all from a beautiful dashboard.
 
-**Built for:** Rishi Raj — Backend/Full-Stack SDE-1/2 roles with 1.5-2 YOE  
-**Target locations:** Bengaluru, Remote, Hyderabad, Noida, Gurgaon
-
 ---
 
 ## 📋 Table of Contents
