@@ -93,15 +93,16 @@ const api = {
   resumes: {
     list: (params = {}) => http.get('/api/resumes', { params }),
     get: (id) => http.get(`/api/resumes/${id}`),
-    uploadBase: (file) => {
-      const formData = new FormData()
-      formData.append('file', file)
-      return http.post('/api/resumes/upload-base', formData, { timeout: 120000 })
-    },
+    getLatex: () => http.get('/api/resumes/latex'),
+    updateLatex: (content) => http.put('/api/resumes/latex', { content }),
     tailor: (jobId) => http.post('/api/resumes/tailor', null, { params: { job_id: jobId }, timeout: 120000 }),
+    compileUrl: (id) => {
+      const token = localStorage.getItem('token')
+      const base = import.meta.env.VITE_API_URL || ''
+      return `${base}/api/resumes/compile/${id}?token=${token}`
+    },
     generateCoverLetter: (jobId, tone = 'professional') =>
       http.post('/api/resumes/cover-letter', null, { params: { job_id: jobId, tone } }),
-    download: (id, style = 'original') => `/api/resumes/download/${id}?style=${style}`,
   },
 
   // ── Settings ──
