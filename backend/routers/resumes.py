@@ -123,7 +123,7 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user_id)
 
 @router.post("/tailor")
 async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)):
-    """Tailor resume for a specific job. AI modifies the LaTeX directly."""
+    """Tailor resume for a specific job. Fetches job description if missing."""
     jobs_col = get_collection("jobs")
     resumes_col = get_collection("resumes")
 
@@ -135,12 +135,43 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
     if not base or not base.get("latex_source"):
         raise HTTPException(status_code=400, detail="No base LaTeX resume found. Upload one first.")
 
+    # If job has no description, try to fetch it from the portal
+    description = job.get("description", "") or ""
+    skills = job.get("skills", []) or []
+
+    if not description and job.get("url"):
+        try:
+            from scrapers.scraper_manager import SCRAPERS
+            portal = job.get("portal", "")
+            if portal in SCRAPERS:
+                scraper = SCRAPERS[portal]()
+                await scraper.launch_browser()
+                try:
+                    detail = await scraper.parse_job_detail(job["url"])
+                    if detail:
+                        description = detail.get("description", "") or ""
+                        skills = detail.get("skills", skills) or skills
+                        # Save fetched data back to job
+                        update = {}
+                        if description:
+                            update["description"] = description
+                        if detail.get("skills"):
+                            update["skills"] = detail["skills"]
+                        if update:
+                            update["updated_at"] = utc_now()
+                            await jobs_col.update_one({"_id": job["_id"]}, {"$set": update})
+                            logger.info(f"Fetched job description for '{job['title']}' ({len(description)} chars)")
+                finally:
+                    await scraper.close_browser()
+        except Exception as e:
+            logger.warning(f"Failed to fetch job description: {e}")
+
     try:
         result = await resume_tailor.tailor_resume(
             latex_source=base["latex_source"],
             job_title=job["title"],
-            job_description=job.get("description", ""),
-            job_skills=job.get("skills", []),
+            job_description=description,
+            job_skills=skills,
             company_name=job["company"],
         )
     except Exception as e:

@@ -2,8 +2,8 @@
 JOBPILOT — Resume Tailor Service (LaTeX-based)
 
 Takes the user's LaTeX resume and a job description, then uses AI
-to modify the LaTeX content (reword bullets, reorder skills, adjust summary)
-while preserving all LaTeX formatting and commands.
+to modify the LaTeX content while preserving formatting.
+Now includes rules.md and profile.md context for smarter tailoring.
 """
 
 from services.ai_service import ai_service
@@ -12,7 +12,7 @@ from utils.logger import logger
 
 class ResumeTailorService:
 
-    SYSTEM_PROMPT = """You are an expert resume writer. You will receive a LaTeX resume and a job description.
+    SYSTEM_PROMPT = """You are an expert resume writer. You will receive a LaTeX resume, a job description, and optionally tailoring rules and a candidate profile.
 
 Your task: Modify the LaTeX resume content to better match the job. Return the COMPLETE modified LaTeX file.
 
@@ -25,6 +25,8 @@ RULES:
 6. You CAN adjust wording to include job-relevant keywords naturally
 7. Keep ALL LaTeX commands, packages, and formatting exactly as-is
 8. Only modify TEXT CONTENT inside the LaTeX structure
+9. If TAILORING RULES are provided, follow them strictly
+10. If CANDIDATE PROFILE is provided, use it to ensure accuracy
 
 After the complete LaTeX, add a line "%%CHANGES%%" followed by a brief list of what you changed, one per line starting with "- "."""
 
@@ -36,17 +38,31 @@ After the complete LaTeX, add a line "%%CHANGES%%" followed by a brief list of w
         job_skills: list,
         company_name: str,
     ) -> dict:
-        prompt = f"""Modify this LaTeX resume for the following job.
+        # Build a rich prompt with all available context
+        parts = []
+
+        parts.append(f"""Modify this LaTeX resume for the following job.
 
 === TARGET JOB ===
 Title: {job_title}
 Company: {company_name}
 Skills: {', '.join(job_skills) if job_skills else 'See description'}
 Description:
-{job_description[:3000] if job_description else 'Not available'}
+{job_description[:3000] if job_description else 'No description available — tailor based on job title, company, and skills listed above.'}""")
 
-=== LATEX RESUME (modify this and return the complete file) ===
-{latex_source}"""
+        # Include tailoring rules if available
+        rules = ai_service.rules
+        if rules:
+            parts.append(f"=== TAILORING RULES (follow these strictly) ===\n{rules[:4000]}")
+
+        # Include candidate profile if available
+        profile = ai_service.profile
+        if profile:
+            parts.append(f"=== CANDIDATE PROFILE (use for accuracy) ===\n{profile[:3000]}")
+
+        parts.append(f"=== LATEX RESUME (modify this and return the complete file) ===\n{latex_source}")
+
+        prompt = "\n\n".join(parts)
 
         result = await ai_service.chat(
             user_message=prompt,
