@@ -14,6 +14,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Briefcase, Send, Target, TrendingUp, AlertCircle, Award, RefreshCw, Square, Loader2 } from 'lucide-react'
 import StatsCard from '../components/StatsCard'
 import StatusBadge from '../components/StatusBadge'
+import ScrapeModal from '../components/ScrapeModal'
 import api from '../api/client'
 import { useApi } from '../hooks/useApi'
 import { timeAgo, portalIcon, capitalize } from '../utils/helpers'
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const { data: activity } = useApi(() => api.dashboard.getRecentActivity())
   const [scraping, setScraping] = useState(false)
   const [scrapeStatus, setScrapeStatus] = useState(null)
+  const [showScrapeModal, setShowScrapeModal] = useState(false)
   const pollRef = useRef(null)
 
   // Poll scrape status while running
@@ -53,9 +55,10 @@ export default function Dashboard() {
     }).catch(() => {})
   }, [])
 
-  const handleScrape = async () => {
+  const handleScrape = async (portals) => {
+    setShowScrapeModal(false)
     try {
-      await api.jobs.triggerScrape()
+      await api.jobs.triggerScrape(portals)
       setScraping(true)
     } catch (e) {
       alert(e.response?.data?.detail || 'Failed to start scrape')
@@ -81,13 +84,18 @@ export default function Dashboard() {
               <Square className="w-4 h-4" /> Stop
             </button>
           )}
-          <button onClick={handleScrape} disabled={scraping}
+          <button onClick={() => setShowScrapeModal(true)} disabled={scraping}
             className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${scraping ? 'animate-spin' : ''}`} />
             {scraping ? 'Scraping...' : 'Scrape Now'}
           </button>
         </div>
       </div>
+
+      {/* Scrape Portal Selector Modal */}
+      {showScrapeModal && (
+        <ScrapeModal onScrape={handleScrape} onClose={() => setShowScrapeModal(false)} />
+      )}
 
       {/* Live Scrape Monitor */}
       {scraping && scrapeStatus && (

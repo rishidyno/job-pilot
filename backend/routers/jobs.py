@@ -12,7 +12,7 @@
 ╚═══════════════════════════════════════════════════════════════════╝
 """
 
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 from bson import ObjectId
 from database import get_collection
@@ -103,14 +103,14 @@ async def list_jobs(
 
 
 @router.post("/scrape")
-async def trigger_scrape(portals: Optional[List[str]] = None, user_id: str = Depends(get_current_user_id)):
+async def trigger_scrape(portals: Optional[str] = None, user_id: str = Depends(get_current_user_id)):
     """Trigger a manual scrape run with live status tracking."""
     import asyncio
 
     if _scrape_status["running"]:
         raise HTTPException(status_code=409, detail="Scrape already running")
 
-    target = portals or ["linkedin", "naukri", "wellfound", "instahyre", "indeed", "glassdoor"]
+    target = [p.strip() for p in portals.split(",") if p.strip()] if portals else ["linkedin", "naukri", "wellfound", "instahyre", "indeed", "glassdoor"]
 
     # Reset status
     _scrape_status.update({

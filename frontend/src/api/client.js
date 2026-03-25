@@ -73,8 +73,7 @@ const api = {
     update: (id, data) => http.patch(`/api/jobs/${id}`, data),
     delete: (id) => http.delete(`/api/jobs/${id}`),
     triggerScrape: (portals = null) => http.post('/api/jobs/scrape', null, portals ? {
-      params: { portals },
-      paramsSerializer: { indexes: null },
+      params: { portals: portals.join(',') },
     } : {}),
     scrapeStatus: () => http.get('/api/jobs/scrape/status'),
     scrapeStop: () => http.post('/api/jobs/scrape/stop'),
