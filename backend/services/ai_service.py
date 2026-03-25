@@ -130,7 +130,7 @@ class AIService:
                 prompt,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd="/tmp",  # Run from /tmp to avoid project context
+                cwd="/tmp",
             )
 
             stdout, stderr = await asyncio.wait_for(
@@ -143,6 +143,10 @@ class AIService:
                 err = stderr.decode("utf-8").strip()
                 logger.error(f"kiro-cli error (exit {process.returncode}): {err}")
                 raise RuntimeError(f"kiro-cli failed: {err}")
+
+            if not response:
+                logger.error("kiro-cli returned empty response")
+                raise RuntimeError("AI returned empty response")
 
             self._total_requests += 1
             logger.debug(f"kiro-cli response ({len(response)} chars)")
@@ -223,7 +227,15 @@ class AIService:
             temperature=temperature,
         )
 
-        parsed = _extract_json(result["content"])
+        content = result.get("content", "")
+        if not content:
+            raise RuntimeError("AI returned empty response")
+
+        try:
+            parsed = _extract_json(content)
+        except ValueError as e:
+            logger.error(f"Failed to parse AI JSON response: {content[:300]}")
+            raise RuntimeError(f"AI returned invalid JSON: {str(e)}")
 
         return {
             "data": parsed,

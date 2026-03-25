@@ -1,14 +1,14 @@
 """
 ╔═══════════════════════════════════════════════════════════════════╗
-║  JOBPILOT — Resumes API Router                                   ║
+║  JOBPILOT — Resumes API Router                                    ║
 ║                                                                   ║
 ║  Endpoints for managing resumes and cover letters:                ║
-║  POST   /api/resumes/upload-base    → Upload your base resume    ║
-║  GET    /api/resumes                → List all resume versions   ║
-║  GET    /api/resumes/:id            → Get a specific resume      ║
-║  POST   /api/resumes/tailor         → Tailor resume for a job   ║
-║  POST   /api/resumes/cover-letter   → Generate cover letter      ║
-║  GET    /api/resumes/download/:id   → Download resume PDF        ║
+║  POST   /api/resumes/upload-base    → Upload your base resume     ║
+║  GET    /api/resumes                → List all resume versions    ║
+║  GET    /api/resumes/:id            → Get a specific resume       ║
+║  POST   /api/resumes/tailor         → Tailor resume for a job     ║
+║  POST   /api/resumes/cover-letter   → Generate cover letter       ║
+║  GET    /api/resumes/download/:id   → Download resume PDF         ║
 ╚═══════════════════════════════════════════════════════════════════╝
 """
 
@@ -160,23 +160,31 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
         raise HTTPException(status_code=400, detail="No base resume found. Upload one first.")
 
     # Tailor with AI
-    tailored = await resume_tailor.tailor_resume(
-        base_resume_text=base_resume.get("raw_text", ""),
-        job_title=job["title"],
-        job_description=job.get("description", ""),
-        job_skills=job.get("skills", []),
-        company_name=job["company"],
-    )
+    try:
+        tailored = await resume_tailor.tailor_resume(
+            base_resume_text=base_resume.get("raw_text", ""),
+            job_title=job["title"],
+            job_description=job.get("description", ""),
+            job_skills=job.get("skills", []),
+            company_name=job["company"],
+        )
+    except Exception as e:
+        logger.error(f"AI tailoring failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI tailoring failed: {str(e)[:200]}")
 
     # Generate PDFs
-    pdf_original = await pdf_generator.generate_resume_pdf(
-        content=tailored, template_style="original",
-        job_title=job["title"], company_name=job["company"],
-    )
-    pdf_clean = await pdf_generator.generate_resume_pdf(
-        content=tailored, template_style="clean",
-        job_title=job["title"], company_name=job["company"],
-    )
+    try:
+        pdf_original = await pdf_generator.generate_resume_pdf(
+            content=tailored, template_style="original",
+            job_title=job["title"], company_name=job["company"],
+        )
+        pdf_clean = await pdf_generator.generate_resume_pdf(
+            content=tailored, template_style="clean",
+            job_title=job["title"], company_name=job["company"],
+        )
+    except Exception as e:
+        logger.error(f"PDF generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)[:200]}")
 
     # Save to DB
     resume_doc = {
