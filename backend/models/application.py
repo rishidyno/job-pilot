@@ -79,6 +79,9 @@ class Application(BaseModel):
     # ── System fields ──
     id: Optional[str] = Field(None, alias="_id")
     
+    # ── Owner ──
+    user_id: Optional[str] = Field(None, description="Owner user ID")
+    
     # ── References ──
     job_id: str = Field(..., description="Reference to the job document")
     resume_id: Optional[str] = Field(None, description="Tailored resume used for this application")

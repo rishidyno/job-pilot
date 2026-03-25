@@ -85,48 +85,95 @@ async def _create_indexes() -> None:
     """
     Create MongoDB indexes for performance.
     
-    Indexes are idempotent — calling this multiple times is safe.
-    MongoDB will skip index creation if the index already exists.
-    
-    WHY THESE INDEXES:
-    - jobs.portal + jobs.external_id: Unique constraint to prevent duplicate job entries
-    - jobs.match_score: Fast sorting by relevance
-    - jobs.created_at: Fast date-range queries
-    - applications.status: Fast filtering by application status
-    - applications.job_id: Fast lookup of application by job
+    All data is scoped per user, so most indexes include user_id
+    as the leading field for efficient per-user queries.
     """
     db = get_db()
 
+    # ── Drop old single-tenant indexes that conflict with multi-user ──
+    for col_name, old_indexes in [
+        ("jobs", ["unique_job_per_portal"]),
+        ("applications", ["one_app_per_job"]),
+    ]:
+        col = db[col_name]
+        existing = await col.index_information()
+        for idx_name in old_indexes:
+            if idx_name in existing:
+                await col.drop_index(idx_name)
+                logger.info(f"Dropped old index {col_name}.{idx_name}")
+
     # ── Jobs collection indexes ──
-    # Unique index: same job from same portal should not be duplicated
+    # Unique per user: same job from same portal per user
     await db.jobs.create_index(
-        [("portal", 1), ("external_id", 1)],
+        [("user_id", 1), ("portal", 1), ("external_id", 1)],
         unique=True,
-        name="unique_job_per_portal"
+        name="unique_job_per_user_portal"
     )
-    # Sort by match score for "best matches first" queries
-    await db.jobs.create_index([("match_score", -1)], name="match_score_desc")
-    # Sort by creation date for "newest first" queries
-    await db.jobs.create_index([("created_at", -1)], name="created_at_desc")
-    # Filter by status (new, reviewed, applied, rejected, etc.)
-    await db.jobs.create_index([("status", 1)], name="status_filter")
-    # Text index for full-text search across job titles and descriptions
+    # Per-user queries sorted by match score
     await db.jobs.create_index(
-        [("title", "text"), ("company", "text"), ("description", "text")],
-        name="job_text_search"
+        [("user_id", 1), ("match_score", -1)],
+        name="user_match_score"
     )
+    # Per-user queries sorted by date
+    await db.jobs.create_index(
+        [("user_id", 1), ("created_at", -1)],
+        name="user_created_at"
+    )
+    # Per-user status filter
+    await db.jobs.create_index(
+        [("user_id", 1), ("status", 1)],
+        name="user_status"
+    )
+    # Text index (can't include user_id, MongoDB limitation — filtered in app layer)
+    try:
+        await db.jobs.create_index(
+            [("title", "text"), ("company", "text"), ("description", "text")],
+            name="job_text_search"
+        )
+    except Exception:
+        pass  # Already exists
 
     # ── Applications collection indexes ──
-    await db.applications.create_index([("status", 1)], name="app_status_filter")
-    await db.applications.create_index([("job_id", 1)], unique=True, name="one_app_per_job")
-    await db.applications.create_index([("applied_at", -1)], name="app_date_desc")
+    # Unique: one application per job per user
+    await db.applications.create_index(
+        [("user_id", 1), ("job_id", 1)],
+        unique=True,
+        name="one_app_per_user_job"
+    )
+    await db.applications.create_index(
+        [("user_id", 1), ("status", 1)],
+        name="user_app_status"
+    )
+    await db.applications.create_index(
+        [("user_id", 1), ("applied_at", -1)],
+        name="user_app_date"
+    )
 
     # ── Resumes collection indexes ──
-    await db.resumes.create_index([("job_id", 1)], name="resume_by_job")
-    await db.resumes.create_index([("is_base", 1)], name="base_resume_filter")
+    await db.resumes.create_index(
+        [("user_id", 1), ("is_base", 1)],
+        name="user_base_resume"
+    )
+    await db.resumes.create_index(
+        [("user_id", 1), ("job_id", 1)],
+        name="user_resume_job"
+    )
+
+    # ── User profile — one per user ──
+    await db.user_profile.create_index(
+        [("user_id", 1)],
+        unique=True,
+        name="unique_user_profile"
+    )
+
+    # ── Cover letters ──
+    await db.cover_letters.create_index(
+        [("user_id", 1), ("job_id", 1)],
+        name="user_cover_letter_job"
+    )
 
     # ── Scrape logs ──
-    await db.scrape_logs.create_index([("started_at", -1)], name="scrape_log_date")
+    await db.scrape_logs.create_index([("user_id", 1), ("started_at", -1)], name="user_scrape_log")
 
     # ── Users ──
     await db.users.create_index([("email", 1)], unique=True, name="unique_email")

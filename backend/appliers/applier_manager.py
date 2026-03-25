@@ -56,7 +56,7 @@ class ApplierManager:
     - The API (when user clicks "Apply" in semi-mode)
     """
 
-    async def apply_to_job(self, job_id: str, force: bool = False) -> dict:
+    async def apply_to_job(self, job_id: str, force: bool = False, user_id: Optional[str] = None) -> dict:
         """
         Apply to a specific job.
         
@@ -82,12 +82,18 @@ class ApplierManager:
         resumes_col = get_collection("resumes")
 
         # ── Step 1: Fetch the job ──
-        job = await jobs_col.find_one({"_id": ObjectId(job_id)})
+        job_query = {"_id": ObjectId(job_id)}
+        if user_id:
+            job_query["user_id"] = user_id
+        job = await jobs_col.find_one(job_query)
         if not job:
             return {"success": False, "error": f"Job {job_id} not found"}
 
         # Check if already applied
-        existing_app = await apps_col.find_one({"job_id": job_id})
+        app_query = {"job_id": job_id}
+        if user_id:
+            app_query["user_id"] = user_id
+        existing_app = await apps_col.find_one(app_query)
         if existing_app:
             return {"success": False, "error": "Already applied to this job"}
 
@@ -103,7 +109,10 @@ class ApplierManager:
 
         try:
             # ── Step 2: Get base resume ──
-            base_resume = await resumes_col.find_one({"is_base": True})
+            base_query = {"is_base": True}
+            if user_id:
+                base_query["user_id"] = user_id
+            base_resume = await resumes_col.find_one(base_query)
             if not base_resume:
                 return {"success": False, "error": "No base resume found. Upload one first."}
 
@@ -143,6 +152,7 @@ class ApplierManager:
             # Save resume record to DB
             resume_doc = {
                 "is_base": False,
+                "user_id": user_id,
                 "job_id": job_id,
                 "base_resume_id": str(base_resume["_id"]),
                 "content_json": tailored_content,
@@ -158,6 +168,7 @@ class ApplierManager:
             cl_col = get_collection("cover_letters")
             cl_doc = {
                 "job_id": job_id,
+                "user_id": user_id,
                 "resume_id": str(resume_result.inserted_id),
                 "content": cover_letter_content.get("full_text", ""),
                 "file_path": cover_letter_pdf,
@@ -188,6 +199,7 @@ class ApplierManager:
             app_status = "submitted" if apply_result["success"] else "failed"
             app_doc = {
                 "job_id": job_id,
+                "user_id": user_id,
                 "resume_id": str(resume_result.inserted_id),
                 "cover_letter_id": str(cl_result.inserted_id),
                 "status": app_status,
@@ -210,8 +222,11 @@ class ApplierManager:
             app_insert = await apps_col.insert_one(app_doc)
 
             # Update job status
+            job_update_query = {"_id": ObjectId(job_id)}
+            if user_id:
+                job_update_query["user_id"] = user_id
             await jobs_col.update_one(
-                {"_id": ObjectId(job_id)},
+                job_update_query,
                 {"$set": {"status": "applied" if apply_result["success"] else "shortlisted", "updated_at": utc_now()}},
             )
 
@@ -237,7 +252,7 @@ class ApplierManager:
             logger.error(f"Apply pipeline failed for job {job_id}: {e}")
             return {"success": False, "error": str(e)}
 
-    async def process_auto_apply_queue(self) -> dict:
+    async def process_auto_apply_queue(self, user_id: Optional[str] = None) -> dict:
         """
         Process all jobs queued for auto-apply.
         
@@ -259,7 +274,7 @@ class ApplierManager:
         # Count today's applications (safety limit)
         from datetime import datetime, timedelta
         today_start = datetime.utcnow().replace(hour=0, minute=0, second=0)
-        today_count = await apps_col.count_documents({"applied_at": {"$gte": today_start}})
+        today_count = await apps_col.count_documents({"applied_at": {"$gte": today_start}, **({"user_id": user_id} if user_id else {})})
 
         if today_count >= 20:  # Daily safety limit
             logger.warning(f"Daily application limit reached ({today_count})")
@@ -271,12 +286,14 @@ class ApplierManager:
             "apply_mode": "auto",
             "match_score": {"$gte": settings.MIN_MATCH_SCORE_TO_APPLY},
         }
+        if user_id:
+            query["user_id"] = user_id
         eligible_jobs = await jobs_col.find(query).sort("match_score", -1).limit(5).to_list(5)
 
         results = {"processed": len(eligible_jobs), "applied": 0, "failed": 0}
 
         for job in eligible_jobs:
-            result = await self.apply_to_job(str(job["_id"]))
+            result = await self.apply_to_job(str(job["_id"]), user_id=user_id)
             if result["success"]:
                 results["applied"] += 1
             else:

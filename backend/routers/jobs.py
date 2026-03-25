@@ -141,7 +141,7 @@ async def trigger_scrape(portals: Optional[List[str]] = None, user_id: str = Dep
                 _log(f"Scraping {portal_name}...")
 
                 try:
-                    result = await scraper_manager._scrape_portal(portal_name)
+                    result = await scraper_manager._scrape_portal(portal_name, user_id=user_id)
                     _scrape_status["jobs_found"] += result["found"]
                     _scrape_status["new_jobs"] += result["new"]
                     _scrape_status["errors"] += result["errors"]
@@ -282,7 +282,7 @@ async def score_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     )
 
     await jobs_col.update_one(
-        {"_id": ObjectId(job_id)},
+        {"_id": ObjectId(job_id), "user_id": user_id},
         {"$set": {
             "match_score": score_data["score"],
             "match_reasoning": score_data.get("reasoning", ""),

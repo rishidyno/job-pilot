@@ -111,6 +111,7 @@ class Job(BaseModel):
     """
     # ── System fields ──
     id: Optional[str] = Field(None, alias="_id", description="MongoDB ObjectId as string")
+    user_id: Optional[str] = Field(None, description="Owner user ID")
     status: JobStatus = Field(JobStatus.NEW, description="Current job status")
     match_score: Optional[int] = Field(None, ge=0, le=100, description="AI-computed match score")
     match_reasoning: Optional[str] = Field(None, description="Why the AI gave this score")

@@ -28,29 +28,43 @@ _scheduler: AsyncIOScheduler | None = None
 
 
 async def _scrape_all_portals():
-    """Background task: Scrape all registered job portals."""
+    """Background task: Scrape all registered job portals for all users."""
     logger.info("⏰ Scheduled scrape starting...")
     try:
         from scrapers.scraper_manager import scraper_manager
-        stats = await scraper_manager.scrape_all()
-        logger.info(f"⏰ Scheduled scrape complete: {stats['new_jobs']} new jobs")
+        from database import get_collection
+        users = await get_collection("users").find({}, {"_id": 1}).to_list(1000)
+        for user in users:
+            uid = str(user["_id"])
+            try:
+                stats = await scraper_manager.scrape_all(user_id=uid)
+                logger.info(f"⏰ Scrape for user {uid}: {stats['new_jobs']} new jobs")
+            except Exception as e:
+                logger.error(f"⏰ Scrape failed for user {uid}: {e}")
     except Exception as e:
         logger.error(f"⏰ Scheduled scrape failed: {e}")
 
 
 async def _process_auto_apply():
-    """Background task: Process the auto-apply queue."""
+    """Background task: Process the auto-apply queue for all users."""
     logger.info("⏰ Processing auto-apply queue...")
     try:
         from appliers.applier_manager import applier_manager
-        results = await applier_manager.process_auto_apply_queue()
-        logger.info(f"⏰ Auto-apply complete: {results.get('applied', 0)} applications submitted")
+        from database import get_collection
+        users = await get_collection("users").find({}, {"_id": 1}).to_list(1000)
+        for user in users:
+            uid = str(user["_id"])
+            try:
+                results = await applier_manager.process_auto_apply_queue(user_id=uid)
+                logger.info(f"⏰ Auto-apply for user {uid}: {results.get('applied', 0)} submitted")
+            except Exception as e:
+                logger.error(f"⏰ Auto-apply failed for user {uid}: {e}")
     except Exception as e:
         logger.error(f"⏰ Auto-apply processing failed: {e}")
 
 
 async def _send_daily_summary():
-    """Background task: Send daily summary via Telegram."""
+    """Background task: Send daily summary via Telegram (aggregated across all users)."""
     try:
         from database import get_collection
         from services.telegram_service import telegram_service

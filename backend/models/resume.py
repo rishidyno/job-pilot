@@ -11,6 +11,7 @@ from utils.helpers import utc_now
 class Resume(BaseModel):
     """Resume document as stored in MongoDB."""
     id: Optional[str] = Field(None, alias="_id")
+    user_id: Optional[str] = Field(None, description="Owner user ID")
 
     is_base: bool = Field(False, description="True = original resume, False = tailored")
     job_id: Optional[str] = Field(None, description="Job this was tailored for")
@@ -38,6 +39,7 @@ class Resume(BaseModel):
 class CoverLetter(BaseModel):
     """Cover letter document as stored in MongoDB."""
     id: Optional[str] = Field(None, alias="_id")
+    user_id: Optional[str] = Field(None, description="Owner user ID")
 
     job_id: str
     content: str = Field(..., description="Full cover letter text")

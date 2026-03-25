@@ -66,7 +66,7 @@ class ScraperManager:
     to trigger scraping operations.
     """
 
-    async def scrape_all(self, portals: Optional[List[str]] = None) -> dict:
+    async def scrape_all(self, portals: Optional[List[str]] = None, user_id: Optional[str] = None) -> dict:
         """
         Run all enabled scrapers and process results.
         
@@ -97,7 +97,7 @@ class ScraperManager:
                 logger.warning(f"Unknown portal: {portal_name}")
                 continue
 
-            portal_stats = await self._scrape_portal(portal_name)
+            portal_stats = await self._scrape_portal(portal_name, user_id=user_id)
             stats["portal_stats"][portal_name] = portal_stats
             stats["total_found"] += portal_stats["found"]
             stats["new_jobs"] += portal_stats["new"]
@@ -113,6 +113,7 @@ class ScraperManager:
         # Save scrape log to database
         scrape_logs = get_collection("scrape_logs")
         log_data = {**stats}
+        log_data["user_id"] = user_id
         log_data["started_at"] = stats["started_at"]
         log_data["completed_at"] = stats["completed_at"]
         await scrape_logs.insert_one(log_data)
@@ -124,7 +125,7 @@ class ScraperManager:
 
         return stats
 
-    async def _scrape_portal(self, portal_name: str) -> dict:
+    async def _scrape_portal(self, portal_name: str, user_id: Optional[str] = None) -> dict:
         """
         Run a single portal scraper and process its results.
         
@@ -156,6 +157,7 @@ class ScraperManager:
                     # Build the document to insert
                     job_doc = job_data.model_dump()
                     job_doc["job_hash"] = job_hash
+                    job_doc["user_id"] = user_id
                     job_doc["created_at"] = utc_now()
                     job_doc["updated_at"] = utc_now()
                     job_doc["status"] = "new"
@@ -188,10 +190,10 @@ class ScraperManager:
                             )
 
                     except DuplicateKeyError:
-                        # Job already exists — update last_seen timestamp
+                        # Job already exists for this user — update last_seen timestamp
                         portal_stats["duplicates"] += 1
                         await jobs_collection.update_one(
-                            {"portal": job_data.portal, "external_id": job_data.external_id},
+                            {"user_id": user_id, "portal": job_data.portal, "external_id": job_data.external_id},
                             {"$set": {"updated_at": utc_now()}},
                         )
 
@@ -213,17 +215,9 @@ class ScraperManager:
 
         return portal_stats
 
-    async def scrape_single(self, portal_name: str) -> dict:
-        """
-        Convenience method to scrape a single portal.
-        
-        Args:
-            portal_name: Portal to scrape
-        
-        Returns:
-            dict: Scrape stats
-        """
-        return await self.scrape_all(portals=[portal_name])
+    async def scrape_single(self, portal_name: str, user_id: Optional[str] = None) -> dict:
+        """Convenience method to scrape a single portal."""
+        return await self.scrape_all(portals=[portal_name], user_id=user_id)
 
 
 # ─────────────────────────────────────

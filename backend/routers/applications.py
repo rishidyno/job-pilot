@@ -99,7 +99,7 @@ async def create_application(job_id: str, force: bool = False, user_id: str = De
     result = await apps_col.insert_one(app_doc)
 
     await jobs_col.update_one(
-        {"_id": ObjectId(job_id)},
+        {"_id": ObjectId(job_id), "user_id": user_id},
         {"$set": {"status": "applied", "updated_at": utc_now()}},
     )
 
@@ -162,7 +162,7 @@ async def retry_application(app_id: str, user_id: str = Depends(get_current_user
         raise HTTPException(status_code=400, detail="Can only retry failed applications")
 
     # Delete the failed application and re-apply
-    await apps_col.delete_one({"_id": ObjectId(app_id)})
-    result = await applier_manager.apply_to_job(job_id=app["job_id"], force=True)
+    await apps_col.delete_one({"_id": ObjectId(app_id), "user_id": user_id})
+    result = await applier_manager.apply_to_job(job_id=app["job_id"], force=True, user_id=user_id)
 
     return result

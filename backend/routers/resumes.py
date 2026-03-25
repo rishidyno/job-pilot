@@ -195,7 +195,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
 
     # Link tailored resume back to the job
     await jobs_col.update_one(
-        {"_id": ObjectId(job_id)},
+        {"_id": ObjectId(job_id), "user_id": user_id},
         {"$set": {"tailored_resume_id": str(result.inserted_id), "updated_at": utc_now()}}
     )
 

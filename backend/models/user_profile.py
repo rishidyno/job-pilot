@@ -26,19 +26,20 @@ class UserProfile(BaseModel):
     - Generate personalized cover letters
     """
     id: Optional[str] = Field(None, alias="_id")
+    user_id: Optional[str] = Field(None, description="Owner user ID")
     
     # ── Personal Info ──
-    full_name: str = Field("Rishi Raj", description="Your full name")
-    email: str = Field("rishiraj727909.work@gmail.com", description="Primary email")
-    phone: str = Field("+91-8210239176", description="Phone number")
+    full_name: str = Field("", description="Your full name")
+    email: str = Field("", description="Primary email")
+    phone: str = Field("", description="Phone number")
     linkedin_url: str = Field("", description="LinkedIn profile URL")
     github_url: str = Field("", description="GitHub profile URL")
-    location: str = Field("Bengaluru, Karnataka", description="Current location")
+    location: str = Field("", description="Current location")
     
     # ── Professional Summary ──
-    current_role: str = Field("SDE-1", description="Current job title")
-    current_company: str = Field("Amazon", description="Current employer")
-    total_experience_years: float = Field(1.5, description="Total years of experience")
+    current_role: str = Field("", description="Current job title")
+    current_company: str = Field("", description="Current employer")
+    total_experience_years: float = Field(0, description="Total years of experience")
     
     # ── Job Search Preferences ──
     target_roles: List[str] = Field(
