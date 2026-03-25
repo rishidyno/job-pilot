@@ -128,18 +128,21 @@ class BaseScraper(ABC):
 
     async def launch_browser(self) -> None:
         """
-        Launch a Playwright Chromium browser instance.
+        Launch browser for scraping.
+        Uses system Chrome (channel='chrome') which is more stable
+        than bundled Chromium inside server processes.
         """
         logger.info(f"[{self.portal_name}] Launching browser...")
 
         self._playwright = await async_playwright().start()
 
+        # Use system Chrome — bundled Chromium crashes inside uvicorn
         self._browser = await self._playwright.chromium.launch(
             headless=settings.PLAYWRIGHT_HEADLESS,
+            channel="chrome",
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
-                "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
             ],
