@@ -70,8 +70,16 @@ class LinkedInScraper(BaseScraper):
             logger.info("[linkedin] Logging in...")
 
             # Navigate to login page
-            await self.safe_goto(self.LOGIN_URL)
+            if not await self.safe_goto(self.LOGIN_URL):
+                logger.error("[linkedin] Could not load login page")
+                return False
             await self.random_delay(1, 2)
+
+            # Verify login form is present
+            username_field = await self._page.query_selector("#username")
+            if not username_field:
+                logger.error(f"[linkedin] Login form not found. URL: {self._page.url}")
+                return False
 
             # Enter email
             await self.human_type("#username", email, delay_ms=80)
@@ -109,14 +117,8 @@ class LinkedInScraper(BaseScraper):
             return True
 
         except Exception as e:
-            logger.error(f"[linkedin] Login failed: {e}")
-            # Check if there's a security challenge (CAPTCHA, verification)
-            current_url = self._page.url if self._page else ""
-            if "challenge" in current_url or "checkpoint" in current_url:
-                logger.error(
-                    "[linkedin] Security challenge detected. "
-                    "Login manually once, then try again."
-                )
+            current_url = self._page.url if self._page else "unknown"
+            logger.error(f"[linkedin] Login failed at URL {current_url}: {type(e).__name__}: {e}")
             return False
 
     async def search_jobs(

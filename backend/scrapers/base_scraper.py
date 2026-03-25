@@ -128,46 +128,53 @@ class BaseScraper(ABC):
 
     async def launch_browser(self) -> None:
         """
-        Launch a Playwright Chromium browser instance.
-        
-        Configures:
-        - Headless mode (from settings)
-        - Random user-agent for anti-detection
-        - Standard viewport size
-        - JavaScript enabled (required for most portals)
+        Launch a Playwright Chromium browser instance with crash recovery.
+        Retries once if the browser crashes on first attempt.
         """
-        logger.info(f"[{self.portal_name}] Launching browser...")
+        for attempt in range(2):
+            try:
+                if attempt > 0:
+                    logger.info(f"[{self.portal_name}] Retrying browser launch (attempt {attempt + 1})...")
+                    await asyncio.sleep(2)
+                else:
+                    logger.info(f"[{self.portal_name}] Launching browser...")
 
-        self._playwright = await async_playwright().start()
+                self._playwright = await async_playwright().start()
 
-        self._browser = await self._playwright.chromium.launch(
-            headless=settings.PLAYWRIGHT_HEADLESS,
-            args=[
-                "--disable-blink-features=AutomationControlled",  # Hide automation flag
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-            ],
-        )
+                self._browser = await self._playwright.chromium.launch(
+                    headless=settings.PLAYWRIGHT_HEADLESS,
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                    ],
+                )
 
-        # Create a new browser context with anti-detection settings
-        self._context = await self._browser.new_context(
-            user_agent=random.choice(self.USER_AGENTS),
-            viewport={"width": 1920, "height": 1080},
-            locale="en-US",
-            timezone_id="Asia/Kolkata",
-        )
+                self._context = await self._browser.new_context(
+                    user_agent=random.choice(self.USER_AGENTS),
+                    viewport={"width": 1920, "height": 1080},
+                    locale="en-US",
+                    timezone_id="Asia/Kolkata",
+                )
 
-        # Create a page within the context
-        self._page = await self._context.new_page()
+                self._page = await self._context.new_page()
 
-        # Additional anti-detection: override navigator.webdriver
-        await self._page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            });
-        """)
+                await self._page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                    });
+                """)
 
-        logger.info(f"[{self.portal_name}] Browser launched")
+                logger.info(f"[{self.portal_name}] Browser launched")
+                return  # Success
+
+            except Exception as e:
+                logger.warning(f"[{self.portal_name}] Browser launch attempt {attempt + 1} failed: {e}")
+                await self.close_browser()
+                if attempt == 1:
+                    raise
 
     async def close_browser(self) -> None:
         """

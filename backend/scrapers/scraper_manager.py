@@ -90,7 +90,8 @@ class ScraperManager:
                 emit("step", f"[{portal_name}] Logging in...")
                 logged_in = await scraper.login()
                 if not logged_in:
-                    emit("error", f"[{portal_name}] Login failed — skipping portal")
+                    # Get the last log line for context
+                    emit("error", f"[{portal_name}] Login failed — check credentials or try again (browser may have crashed)")
                     portal_stats["errors"] += 1
                     return portal_stats
                 emit("ok", f"[{portal_name}] Login successful")
