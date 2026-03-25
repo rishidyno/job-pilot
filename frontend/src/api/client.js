@@ -98,8 +98,7 @@ const api = {
     tailor: (jobId) => http.post('/api/resumes/tailor', null, { params: { job_id: jobId }, timeout: 120000 }),
     compileUrl: (id) => {
       const token = localStorage.getItem('token')
-      const base = import.meta.env.VITE_API_URL || ''
-      return `${base}/api/resumes/compile/${id}?token=${token}`
+      return `/api/resumes/compile/${id}?token=${token}`
     },
     generateCoverLetter: (jobId, tone = 'professional') =>
       http.post('/api/resumes/cover-letter', null, { params: { job_id: jobId, tone } }),

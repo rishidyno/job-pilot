@@ -1,6 +1,5 @@
 /**
  * JOBPILOT — JobCard Component
- * Displays a job listing with title, company, score, status, and actions.
  */
 
 import { MapPin, ExternalLink, Star, Clock, Trash2, FileText, Eye } from 'lucide-react'
@@ -9,10 +8,12 @@ import MatchScore from './MatchScore'
 import api from '../api/client'
 import { portalIcon, truncate, timeAgo } from '../utils/helpers'
 import { useState } from 'react'
+import PdfViewer from './PdfViewer'
 
 export default function JobCard({ job, onStatusChange, onApply, onScore, onDelete, onTailor }) {
   const [tailoring, setTailoring] = useState(false)
   const [scoring, setScoring] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState(null)
 
   const handleTailor = async () => {
     setTailoring(true)
@@ -22,9 +23,10 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
     setScoring(true)
     try { await onScore(job._id) } finally { setScoring(false) }
   }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-      {/* Header row: score + title + portal */}
+      {/* Header row */}
       <div className="flex items-start gap-4">
         <MatchScore score={job.match_score} />
         <div className="flex-1 min-w-0">
@@ -62,12 +64,12 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
         <p className="text-xs text-gray-400 mt-2 line-clamp-2">{truncate(job.description, 200)}</p>
       )}
 
-      {/* Tailored resume link */}
+      {/* Tailored resume */}
       {job.tailored_resume_id && (
         <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
           <FileText className="w-3.5 h-3.5 text-green-600" />
           <span className="text-xs text-green-700 font-medium">Tailored resume ready</span>
-          <button onClick={() => window.open(api.resumes.compileUrl(job.tailored_resume_id), '_blank')}
+          <button onClick={() => setPdfUrl(api.resumes.compileUrl(job.tailored_resume_id))}
             className="flex items-center gap-1 text-xs text-green-600 hover:underline ml-auto">
             <Eye className="w-3 h-3" /> View PDF
           </button>
@@ -79,9 +81,7 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
         <span className="text-xs text-gray-400">{timeAgo(job.created_at)}</span>
         <div className="flex items-center gap-2">
           {job.match_reasoning && (
-            <span title={job.match_reasoning} className="text-xs text-brand-600 cursor-help">
-              AI Insight ✨
-            </span>
+            <span title={job.match_reasoning} className="text-xs text-brand-600 cursor-help">AI Insight ✨</span>
           )}
           {onScore && (
             <button onClick={handleScore} disabled={scoring}
@@ -113,6 +113,15 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
           )}
         </div>
       </div>
+
+      {/* PDF Viewer Modal */}
+      {pdfUrl && (
+        <PdfViewer
+          url={pdfUrl}
+          title={`${job.title} — ${job.company}`}
+          onClose={() => setPdfUrl(null)}
+        />
+      )}
     </div>
   )
 }

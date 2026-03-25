@@ -8,6 +8,7 @@
 import { useState, useRef } from 'react'
 import { FileText, Sparkles, Eye, Save, Check } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
+import PdfViewer from '../components/PdfViewer'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
 import { timeAgo } from '../utils/helpers'
@@ -18,6 +19,8 @@ export default function ResumeManager() {
   const { execute, loading: saving } = useApiMutation()
   const [latex, setLatex] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState(null)
+  const [pdfTitle, setPdfTitle] = useState('')
 
   // Initialize editor content from API
   const editorContent = latex !== null ? latex : (latexData?.content || '')
@@ -34,10 +37,10 @@ export default function ResumeManager() {
   }
 
   const handlePreviewBase = () => {
-    // Find the base resume ID from the list
     const base = (listData?.resumes || []).find(r => r.is_base)
     if (base) {
-      window.open(api.resumes.compileUrl(base._id), '_blank')
+      setPdfTitle('Base Resume')
+      setPdfUrl(api.resumes.compileUrl(base._id))
     } else {
       alert('Save your LaTeX first, then preview.')
     }
@@ -114,7 +117,10 @@ export default function ResumeManager() {
                       <p className="text-xs text-gray-500">{timeAgo(resume.created_at)}</p>
                     </div>
                   </div>
-                  <button onClick={() => window.open(api.resumes.compileUrl(resume._id), '_blank')}
+                  <button onClick={() => {
+                    setPdfTitle(`Tailored for Job #${resume.job_id?.slice(-6)}`)
+                    setPdfUrl(api.resumes.compileUrl(resume._id))
+                  }}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 border border-brand-200 text-brand-700 rounded-lg hover:bg-brand-100">
                     <Eye className="w-3 h-3" /> View PDF
                   </button>
@@ -137,6 +143,11 @@ export default function ResumeManager() {
           </div>
         )}
       </div>
+
+      {/* PDF Viewer Modal */}
+      {pdfUrl && (
+        <PdfViewer url={pdfUrl} title={pdfTitle} onClose={() => setPdfUrl(null)} />
+      )}
     </div>
   )
 }
