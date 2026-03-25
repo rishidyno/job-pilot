@@ -48,6 +48,10 @@ def _strip_ansi(text: str) -> str:
             continue
         if stripped == '------':
             continue
+        if stripped.startswith('error: Tool approva'):
+            continue
+        if stripped.startswith('error: MCP'):
+            continue
         # Strip leading "> " prompt marker but keep the content
         if stripped.startswith('> '):
             stripped = stripped[2:]
@@ -141,7 +145,9 @@ class AIService:
                 prompt_file = f.name
 
             process = await asyncio.create_subprocess_exec(
-                "kiro-cli", "chat", "--no-interactive",
+                "kiro-cli", "chat",
+                "--no-interactive",
+                "--trust-tools=fs_read",
                 f"Read the prompt from {prompt_file} and follow the instructions in it exactly.",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -160,7 +166,7 @@ class AIService:
 
             response = _strip_ansi(stdout.decode("utf-8"))
 
-            if process.returncode != 0:
+            if process.returncode != 0 and not response:
                 err = stderr.decode("utf-8").strip()
                 logger.error(f"kiro-cli error (exit {process.returncode}): {err}")
                 raise RuntimeError(f"kiro-cli failed: {err}")
