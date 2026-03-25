@@ -1,12 +1,23 @@
 /**
- * Portal selector modal — reusable across Dashboard and Jobs pages.
+ * Portal selector modal — responsive, accessible.
  */
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const ALL_PORTALS = ['linkedin', 'naukri', 'wellfound', 'instahyre', 'indeed', 'glassdoor']
 
 export default function ScrapeModal({ onScrape, onClose }) {
   const [selected, setSelected] = useState(new Set(ALL_PORTALS))
+  const modalRef = useRef(null)
+
+  // Trap focus and handle Escape
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    modalRef.current?.focus()
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
 
   const toggle = (p) => setSelected(prev => {
     const next = new Set(prev)
@@ -15,13 +26,16 @@ export default function ScrapeModal({ onScrape, onClose }) {
   })
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Select Portals to Scrape</h3>
-        <p className="text-xs text-gray-500 mb-4">Choose which job sites to scrape from</p>
-        <div className="space-y-2 mb-5">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose} role="dialog" aria-modal="true" aria-label="Select portals to scrape">
+      <div ref={modalRef} tabIndex={-1}
+        className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm p-5 sm:p-6 outline-none"
+        onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Select Portals</h3>
+        <p className="text-xs text-gray-500 mb-4">Choose which job sites to scrape</p>
+        <div className="space-y-1 mb-5">
           {ALL_PORTALS.map(p => (
-            <label key={p} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+            <label key={p} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer">
               <input type="checkbox" checked={selected.has(p)} onChange={() => toggle(p)}
                 className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
               <span className="text-sm text-gray-700 capitalize">{p}</span>
@@ -37,8 +51,8 @@ export default function ScrapeModal({ onScrape, onClose }) {
             <button onClick={onClose}
               className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
             <button onClick={() => onScrape([...selected])} disabled={selected.size === 0}
-              className="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50">
-              Scrape {selected.size} Portal{selected.size !== 1 ? 's' : ''}
+              className="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium">
+              Scrape ({selected.size})
             </button>
           </div>
         </div>

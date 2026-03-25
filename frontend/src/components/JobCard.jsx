@@ -1,14 +1,15 @@
 /**
  * JOBPILOT — JobCard Component
+ * Responsive with proper aria labels and mobile-friendly action layout.
  */
 
 import { MapPin, ExternalLink, Star, Clock, Trash2, FileText, Eye } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import MatchScore from './MatchScore'
+import PdfViewer from './PdfViewer'
 import api from '../api/client'
 import { portalIcon, truncate, timeAgo } from '../utils/helpers'
 import { useState } from 'react'
-import PdfViewer from './PdfViewer'
 
 export default function JobCard({ job, onStatusChange, onApply, onScore, onDelete, onTailor }) {
   const [tailoring, setTailoring] = useState(false)
@@ -25,17 +26,21 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow">
       {/* Header row */}
-      <div className="flex items-start gap-4">
-        <MatchScore score={job.match_score} />
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="hidden sm:block">
+          <MatchScore score={job.match_score} />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
+            {/* Mobile score inline */}
+            <span className="sm:hidden text-xs font-bold text-brand-600">{job.match_score ?? '?'}</span>
             <h3 className="text-sm font-semibold text-gray-900 truncate">{job.title}</h3>
-            <span title={job.portal}>{portalIcon(job.portal)}</span>
+            <span title={job.portal} aria-label={`Source: ${job.portal}`}>{portalIcon(job.portal)}</span>
           </div>
           <p className="text-sm text-gray-600 font-medium">{job.company}</p>
-          <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
             {job.location && (
               <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location}</span>
             )}
@@ -64,63 +69,64 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
         <p className="text-xs text-gray-400 mt-2 line-clamp-2">{truncate(job.description, 200)}</p>
       )}
 
-      {/* Tailored resume */}
+      {/* Tailored resume indicator */}
       {job.tailored_resume_id && (
         <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
           <FileText className="w-3.5 h-3.5 text-green-600" />
           <span className="text-xs text-green-700 font-medium">Tailored resume ready</span>
           <button onClick={() => setPdfUrl(api.resumes.compileUrl(job.tailored_resume_id))}
-            className="flex items-center gap-1 text-xs text-green-600 hover:underline ml-auto">
-            <Eye className="w-3 h-3" /> View PDF
+            className="flex items-center gap-1 text-xs text-green-600 hover:underline ml-auto"
+            aria-label="View tailored resume PDF">
+            <Eye className="w-3 h-3" /> View
           </button>
         </div>
       )}
 
-      {/* Action row */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+      {/* Action row — wraps on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 pt-3 border-t border-gray-100 gap-2 sm:gap-0">
         <span className="text-xs text-gray-400">{timeAgo(job.created_at)}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {job.match_reasoning && (
             <span title={job.match_reasoning} className="text-xs text-brand-600 cursor-help">AI Insight ✨</span>
           )}
           {onScore && (
             <button onClick={handleScore} disabled={scoring}
-              className="text-xs px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50">
-              <Star className="w-3 h-3 inline mr-1" />{scoring ? 'Scoring…' : 'Re-score'}
+              className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              aria-label="Re-score this job with AI">
+              <Star className="w-3 h-3 inline mr-0.5 sm:mr-1" />{scoring ? '...' : 'Score'}
             </button>
           )}
           {onTailor && (
             <button onClick={handleTailor} disabled={tailoring}
-              className="text-xs px-2.5 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100 disabled:opacity-50">
-              <FileText className="w-3 h-3 inline mr-1" />{tailoring ? 'Tailoring…' : 'Tailor Resume'}
+              className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100 disabled:opacity-50"
+              aria-label="Tailor resume for this job">
+              <FileText className="w-3 h-3 inline mr-0.5 sm:mr-1" />{tailoring ? '...' : 'Tailor'}
             </button>
           )}
           <a href={job.url} target="_blank" rel="noopener noreferrer"
-            className="text-xs px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100">
-            <ExternalLink className="w-3 h-3 inline mr-1" />View
+            className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100"
+            aria-label={`View job posting on ${job.portal}`}>
+            <ExternalLink className="w-3 h-3 inline mr-0.5 sm:mr-1" />View
           </a>
           {['new', 'reviewed', 'shortlisted'].includes(job.status) && onApply && (
             <button onClick={() => onApply(job._id)}
-              className="text-xs px-3 py-1 rounded-md bg-brand-600 text-white hover:bg-brand-700 font-medium">
+              className="text-xs px-2.5 sm:px-3 py-1 rounded-md bg-brand-600 text-white hover:bg-brand-700 font-medium"
+              aria-label={`Apply to ${job.title} at ${job.company}`}>
               Apply
             </button>
           )}
           {onDelete && (
             <button onClick={() => { if (confirm('Delete this job?')) onDelete(job._id) }}
-              className="text-xs px-2.5 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100">
-              <Trash2 className="w-3 h-3 inline mr-1" />Delete
+              className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100"
+              aria-label="Delete this job">
+              <Trash2 className="w-3 h-3" />
             </button>
           )}
         </div>
       </div>
 
-      {/* PDF Viewer Modal */}
       {pdfUrl && (
-        <PdfViewer
-          url={pdfUrl}
-          title={`${job.title} — ${job.company}`}
-          onClose={() => setPdfUrl(null)}
-        />
+        <PdfViewer url={pdfUrl} title={`${job.title} — ${job.company}`} onClose={() => setPdfUrl(null)} />
       )}
     </div>
   )

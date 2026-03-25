@@ -1,12 +1,14 @@
 /**
- * Login / Register page
+ * Login / Register page — responsive, accessible.
  */
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../hooks/useToast'
 import { Rocket } from 'lucide-react'
 
 export default function Login() {
   const { login, register } = useAuth()
+  const toast = useToast()
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,18 +23,21 @@ export default function Login() {
     try {
       if (isRegister) {
         await register(email, password, fullName)
+        toast.success('Account created!')
       } else {
         await login(email, password)
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Something went wrong')
+      const msg = err.response?.data?.detail || 'Something went wrong'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Rocket className="w-8 h-8 text-brand-600" />
@@ -41,60 +46,48 @@ export default function Login() {
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900 text-center">
             {isRegister ? 'Create Account' : 'Sign In'}
           </h2>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2">{error}</div>
+            <div className="bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2" role="alert">{error}</div>
           )}
 
           {isRegister && (
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
+            <div>
+              <label htmlFor="fullname" className="sr-only">Full Name</label>
+              <input id="fullname" type="text" placeholder="Full Name" value={fullName}
+                onChange={(e) => setFullName(e.target.value)} required autoComplete="name"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
           )}
 
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+          <div>
+            <label htmlFor="email" className="sr-only">Email</label>
+            <input id="email" type="email" placeholder="Email" value={email}
+              onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+          <div>
+            <label htmlFor="password" className="sr-only">Password</label>
+            <input id="password" type="password" placeholder="Password" value={password}
+              onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete={isRegister ? 'new-password' : 'current-password'}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
-          >
-            {loading ? '...' : isRegister ? 'Register' : 'Sign In'}
+          <button type="submit" disabled={loading}
+            className="w-full py-2.5 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50">
+            {loading ? 'Please wait...' : isRegister ? 'Register' : 'Sign In'}
           </button>
 
           <p className="text-center text-sm text-gray-500">
             {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button
-              type="button"
+            <button type="button"
               onClick={() => { setIsRegister(!isRegister); setError('') }}
-              className="text-brand-600 font-medium hover:underline"
-            >
+              className="text-brand-600 font-medium hover:underline">
               {isRegister ? 'Sign In' : 'Register'}
             </button>
           </p>

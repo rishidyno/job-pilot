@@ -1,19 +1,20 @@
 /**
  * JOBPILOT — Resume Manager Page (LaTeX-based)
- *
- * Edit your base LaTeX resume, preview compiled PDF,
- * and view all tailored versions.
+ * Responsive with skeletons and toasts.
  */
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { FileText, Sparkles, Eye, Save, Check } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import PdfViewer from '../components/PdfViewer'
+import Skeleton from '../components/Skeleton'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
+import { useToast } from '../hooks/useToast'
 import { timeAgo } from '../utils/helpers'
 
 export default function ResumeManager() {
+  const toast = useToast()
   const { data: latexData, loading: latexLoading, refetch: refetchLatex } = useApi(() => api.resumes.getLatex())
   const { data: listData, loading: listLoading, refetch: refetchList } = useApi(() => api.resumes.list())
   const { execute, loading: saving } = useApiMutation()
@@ -22,7 +23,6 @@ export default function ResumeManager() {
   const [pdfUrl, setPdfUrl] = useState(null)
   const [pdfTitle, setPdfTitle] = useState('')
 
-  // Initialize editor content from API
   const editorContent = latex !== null ? latex : (latexData?.content || '')
 
   const handleSave = async () => {
@@ -31,8 +31,9 @@ export default function ResumeManager() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
       refetchLatex()
+      toast.success('Resume saved')
     } catch (err) {
-      alert(`Save failed: ${err.response?.data?.detail || err.message}`)
+      toast.error(err.response?.data?.detail || 'Save failed')
     }
   }
 
@@ -42,7 +43,7 @@ export default function ResumeManager() {
       setPdfTitle('Base Resume')
       setPdfUrl(api.resumes.compileUrl(base._id))
     } else {
-      alert('Save your LaTeX first, then preview.')
+      toast.warning('Save your LaTeX first, then preview.')
     }
   }
 
@@ -50,27 +51,29 @@ export default function ResumeManager() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Resume Manager</h1>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Resume Manager</h1>
         <p className="text-sm text-gray-500 mt-1">Edit your LaTeX resume and view tailored versions</p>
       </div>
 
       {/* LaTeX Editor */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Base Resume (LaTeX)</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Base Resume (LaTeX)</h2>
             <p className="text-xs text-gray-500 mt-1">
-              This is your source-of-truth resume. AI tailors copies of this for each job.
+              Source-of-truth resume. AI tailors copies for each job.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handlePreviewBase}
-              className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
-              <Eye className="w-4 h-4" /> Preview PDF
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+              aria-label="Preview resume as PDF">
+              <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Preview</span> PDF
             </button>
             <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50">
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50"
+              aria-label="Save resume">
               {saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saved ? 'Saved!' : saving ? 'Saving...' : 'Save'}
             </button>
@@ -78,14 +81,15 @@ export default function ResumeManager() {
         </div>
 
         {latexLoading ? (
-          <div className="text-center py-12 text-gray-400">Loading...</div>
+          <Skeleton className="h-[400px] sm:h-[500px] w-full rounded-lg" />
         ) : (
           <textarea
             value={editorContent}
             onChange={(e) => setLatex(e.target.value)}
-            className="w-full h-[500px] font-mono text-xs bg-gray-900 text-green-400 p-4 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+            className="w-full h-[400px] sm:h-[500px] font-mono text-xs bg-gray-900 text-green-400 p-3 sm:p-4 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
             spellCheck={false}
             placeholder="Paste your LaTeX resume here..."
+            aria-label="LaTeX resume editor"
           />
         )}
       </div>
@@ -94,11 +98,26 @@ export default function ResumeManager() {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-brand-500" />
-          <h2 className="text-lg font-semibold text-gray-900">Tailored Versions</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Tailored Versions</h2>
           <span className="text-sm text-gray-400">({tailoredResumes.length})</span>
         </div>
 
-        {tailoredResumes.length === 0 ? (
+        {listLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-8 h-8 rounded" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-8 w-20 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : tailoredResumes.length === 0 ? (
           <EmptyState
             title="No tailored resumes yet"
             message="Click 'Tailor Resume' on any job to generate a tailored version."
@@ -107,22 +126,23 @@ export default function ResumeManager() {
           <div className="space-y-3">
             {tailoredResumes.map(resume => (
               <div key={resume._id} className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-8 h-8 text-indigo-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="w-8 h-8 text-indigo-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">
                         Tailored for Job #{resume.job_id?.slice(-6)}
                       </p>
                       <p className="text-xs text-gray-500">{timeAgo(resume.created_at)}</p>
                     </div>
                   </div>
                   <button onClick={() => {
-                    setPdfTitle(`Tailored for Job #${resume.job_id?.slice(-6)}`)
+                    setPdfTitle(`Tailored #${resume.job_id?.slice(-6)}`)
                     setPdfUrl(api.resumes.compileUrl(resume._id))
                   }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 border border-brand-200 text-brand-700 rounded-lg hover:bg-brand-100">
-                    <Eye className="w-3 h-3" /> View PDF
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 border border-brand-200 text-brand-700 rounded-lg hover:bg-brand-100 shrink-0"
+                    aria-label="View tailored resume PDF">
+                    <Eye className="w-3 h-3" /> View
                   </button>
                 </div>
 
@@ -144,7 +164,6 @@ export default function ResumeManager() {
         )}
       </div>
 
-      {/* PDF Viewer Modal */}
       {pdfUrl && (
         <PdfViewer url={pdfUrl} title={pdfTitle} onClose={() => setPdfUrl(null)} />
       )}
