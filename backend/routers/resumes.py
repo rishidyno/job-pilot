@@ -264,8 +264,12 @@ async def generate_cover_letter(job_id: str, tone: str = "professional", user_id
 
 
 @router.get("/download/{resume_id}")
-async def download_resume(resume_id: str, style: str = "original", preview: bool = False, user_id: str = Depends(get_current_user_id)):
-    """Download or preview a resume PDF file."""
+async def download_resume(resume_id: str, style: str = "original", preview: bool = False, token: Optional[str] = None):
+    """Download or preview a resume PDF file. Auth via query param token for browser links."""
+    from services.auth_service import decode_token
+    if not token:
+        raise HTTPException(status_code=401, detail="Token required")
+    user_id = decode_token(token)
     resumes_col = get_collection("resumes")
     resume = await resumes_col.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
 

@@ -3,11 +3,13 @@
  * Displays a job listing with title, company, score, status, and actions.
  */
 
-import { MapPin, ExternalLink, Star, Clock, Trash2, FileText } from 'lucide-react'
+import { MapPin, ExternalLink, Star, Clock, Trash2, FileText, Download, Eye } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import MatchScore from './MatchScore'
 import { portalIcon, truncate, timeAgo } from '../utils/helpers'
 import { useState } from 'react'
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function JobCard({ job, onStatusChange, onApply, onScore, onDelete, onTailor }) {
   const [tailoring, setTailoring] = useState(false)
@@ -66,11 +68,18 @@ export default function JobCard({ job, onStatusChange, onApply, onScore, onDelet
         <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg">
           <FileText className="w-3.5 h-3.5 text-green-600" />
           <span className="text-xs text-green-700 font-medium">Tailored resume ready</span>
-          <a href={`/api/resumes/download/${job.tailored_resume_id}?style=original&preview=true`}
-            target="_blank" rel="noopener noreferrer"
-            className="text-xs text-green-600 underline ml-auto">Preview</a>
-          <a href={`/api/resumes/download/${job.tailored_resume_id}?style=original`}
-            className="text-xs text-green-600 underline">Download</a>
+          <button onClick={() => {
+            const token = localStorage.getItem('token')
+            window.open(`${API_BASE}/api/resumes/download/${job.tailored_resume_id}?style=original&preview=true&token=${token}`, '_blank')
+          }} className="flex items-center gap-1 text-xs text-green-600 hover:underline ml-auto">
+            <Eye className="w-3 h-3" /> Preview
+          </button>
+          <button onClick={() => {
+            const token = localStorage.getItem('token')
+            window.open(`${API_BASE}/api/resumes/download/${job.tailored_resume_id}?style=original&token=${token}`)
+          }} className="flex items-center gap-1 text-xs text-green-600 hover:underline">
+            <Download className="w-3 h-3" /> Download
+          </button>
         </div>
       )}
 
