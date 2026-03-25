@@ -21,6 +21,11 @@
 
 import os
 from contextlib import asynccontextmanager
+
+# Ensure Homebrew libs are findable for WeasyPrint on macOS
+if os.path.isdir("/opt/homebrew/lib"):
+    os.environ["DYLD_LIBRARY_PATH"] = "/opt/homebrew/lib"
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
