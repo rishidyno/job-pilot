@@ -105,12 +105,19 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-3">
             <Loader2 className="w-4 h-4 text-brand-600 dark:text-brand-400 animate-spin" />
             <h2 className="text-sm font-semibold text-gray-700 dark:text-surface-200">Live Scrape Monitor</h2>
+            {scrapeStatus.stop_requested && (
+              <span className="text-xs bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">Stopping...</span>
+            )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+
+          {/* Stats counters */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mb-3">
             {[
-              { label: 'Current', value: capitalize(scrapeStatus.current_portal || '—'), color: 'text-brand-600 dark:text-brand-400' },
+              { label: 'Portal', value: capitalize(scrapeStatus.current_portal || '—'), color: 'text-brand-600 dark:text-brand-400' },
               { label: 'Found', value: scrapeStatus.jobs_found, color: 'text-gray-800 dark:text-white' },
               { label: 'New', value: scrapeStatus.new_jobs, color: 'text-emerald-600 dark:text-emerald-400' },
+              { label: 'Duplicates', value: scrapeStatus.duplicates || 0, color: 'text-amber-600 dark:text-amber-400' },
+              { label: 'Matches', value: scrapeStatus.high_matches || 0, color: 'text-purple-600 dark:text-purple-400' },
               { label: 'Errors', value: scrapeStatus.errors, color: 'text-red-600 dark:text-red-400' },
             ].map(({ label, value, color }) => (
               <div key={label} className="text-center p-2 bg-gray-50 dark:bg-surface-700 rounded-lg">
@@ -119,6 +126,8 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+
+          {/* Portal progress pills */}
           <div className="flex gap-1.5 flex-wrap mb-3">
             {(scrapeStatus.portals_done || []).map(p => (
               <span key={p} className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 rounded-full">✓ {capitalize(p)}</span>
@@ -130,12 +139,37 @@ export default function Dashboard() {
               <span key={p} className="text-xs px-2 py-1 bg-gray-100 dark:bg-surface-700 text-gray-500 dark:text-surface-400 rounded-full">{capitalize(p)}</span>
             ))}
           </div>
-          <div className="max-h-28 overflow-y-auto bg-gray-900 dark:bg-surface-950 rounded-lg p-3">
-            {(scrapeStatus.logs || []).slice(-10).map((log, i) => (
-              <p key={i} className="text-xs text-gray-300 font-mono leading-relaxed">
-                <span className="text-gray-500">{log.time?.slice(11, 19)}</span> {log.message}
-              </p>
-            ))}
+
+          {/* Color-coded event log */}
+          <div className="max-h-48 overflow-y-auto bg-gray-900 dark:bg-surface-950 rounded-lg p-3 space-y-0.5" ref={el => { if (el) el.scrollTop = el.scrollHeight }}>
+            {(scrapeStatus.logs || []).slice(-30).map((log, i) => {
+              const level = log.level || 'info'
+              const colorMap = {
+                new_job: 'text-emerald-400',
+                match: 'text-purple-400 font-semibold',
+                skip: 'text-amber-400/70',
+                error: 'text-red-400',
+                warn: 'text-amber-400',
+                ok: 'text-emerald-300',
+                step: 'text-blue-300',
+                done: 'text-cyan-300 font-semibold',
+                info: 'text-gray-300',
+              }
+              const levelBadge = {
+                new_job: '✚', match: '★', skip: '↩', error: '✗',
+                warn: '⚠', ok: '✓', step: '→', done: '■', info: '·',
+              }
+              return (
+                <p key={i} className={`text-xs font-mono leading-relaxed ${colorMap[level] || 'text-gray-300'}`}>
+                  <span className="text-gray-600 mr-1">{log.time?.slice(11, 19)}</span>
+                  <span className="mr-1">{levelBadge[level] || '·'}</span>
+                  {log.message}
+                </p>
+              )
+            })}
+            {(scrapeStatus.logs || []).length === 0 && (
+              <p className="text-xs text-gray-500 font-mono">Waiting for events...</p>
+            )}
           </div>
         </div>
       )}
