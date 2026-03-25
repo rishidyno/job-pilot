@@ -109,22 +109,38 @@ Respond ONLY with valid JSON in this exact format:
             dict: Structured tailored resume content (see JSON format above)
                   Also includes AI metadata (tokens used, model, etc.)
         """
-        prompt = f"""Tailor this resume for the following job posting.
+        prompt = f"""Tailor a resume for this job. 
 
-=== CANDIDATE PROFILE ===
-{ai_service.profile if ai_service.profile else 'See resume below'}
+Read the candidate profile from data/profile.md and the rules from data/rules.md in the project root.
+The candidate's base resume text is in data/resumes/ directory.
 
 === TARGET JOB ===
 Title: {job_title}
 Company: {company_name}
 Required Skills: {', '.join(job_skills) if job_skills else 'See description'}
 Job Description:
-{job_description[:5000]}
+{job_description[:3000] if job_description else 'Not available'}
 
-=== ORIGINAL RESUME ===
-{base_resume_text[:6000]}
+=== CANDIDATE RESUME TEXT ===
+{base_resume_text[:4000]}
 
-Tailor the resume following the rules. Respond with JSON only."""
+Respond ONLY with valid JSON in this exact format:
+{{
+    "professional_summary": "2-3 sentence tailored summary",
+    "skills_reordered": ["skill1", "skill2"],
+    "experience": [
+        {{
+            "company": "Company Name",
+            "role": "Job Title",
+            "duration": "Duration",
+            "bullets": ["Reworded bullet 1", "Reworded bullet 2"]
+        }}
+    ],
+    "education": {{"institution": "Name", "degree": "Degree", "details": "Details"}},
+    "achievements": ["achievement1"],
+    "changes_made": ["what you changed and why"],
+    "ats_keywords_added": ["keyword1"]
+}}"""
 
         try:
             result = await ai_service.chat_json(

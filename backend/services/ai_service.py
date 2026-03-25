@@ -122,20 +122,41 @@ class AIService:
 
     async def _run_kiro(self, prompt: str) -> str:
         """
-        Run kiro-cli chat with the given prompt and return the response.
+        Run kiro-cli chat with the given prompt.
+        Writes long prompts to a temp file to avoid CLI arg length issues.
+        Runs from project root so kiro-cli can access data/ files.
         """
+        import tempfile
+
+        project_root = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+
         try:
+            # Write prompt to temp file to avoid CLI arg length limits
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False, dir="/tmp"
+            ) as f:
+                f.write(prompt)
+                prompt_file = f.name
+
             process = await asyncio.create_subprocess_exec(
                 "kiro-cli", "chat", "--no-interactive",
-                prompt,
+                f"Read the prompt from {prompt_file} and follow the instructions in it exactly.",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd="/tmp",
+                cwd=project_root,
             )
 
             stdout, stderr = await asyncio.wait_for(
                 process.communicate(), timeout=120
             )
+
+            # Clean up temp file
+            try:
+                os.unlink(prompt_file)
+            except OSError:
+                pass
 
             response = _strip_ansi(stdout.decode("utf-8"))
 
@@ -156,10 +177,8 @@ class AIService:
             logger.error("kiro-cli timed out after 120s")
             raise RuntimeError("AI request timed out")
         except FileNotFoundError:
-            logger.error("kiro-cli not found. Make sure it's installed and in PATH.")
-            raise RuntimeError(
-                "kiro-cli not found. Install it or add it to your PATH."
-            )
+            logger.error("kiro-cli not found in PATH")
+            raise RuntimeError("kiro-cli not found. Install it or add it to PATH.")
 
     async def chat(
         self,
@@ -184,11 +203,6 @@ class AIService:
         parts = []
         if system_prompt:
             parts.append(f"SYSTEM INSTRUCTIONS:\n{system_prompt}")
-
-        # Always include rules
-        rules = self.rules
-        if rules:
-            parts.append(f"RULES TO FOLLOW:\n{rules}")
 
         parts.append(f"USER REQUEST:\n{user_message}")
 
