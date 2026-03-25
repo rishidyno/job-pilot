@@ -28,7 +28,10 @@ from utils.logger import logger
 
 router = APIRouter(prefix="/api/resumes", tags=["Resumes"])
 
-PDFLATEX_PATH = os.environ.get("PDFLATEX_PATH", "pdflatex")
+import shutil
+
+_default_pdflatex = shutil.which("pdflatex") or "/Library/TeX/texbin/pdflatex"
+PDFLATEX_PATH = os.environ.get("PDFLATEX_PATH", _default_pdflatex)
 
 
 class LatexContent(BaseModel):
