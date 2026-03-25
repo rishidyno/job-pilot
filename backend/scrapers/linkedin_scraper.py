@@ -84,10 +84,28 @@ class LinkedInScraper(BaseScraper):
             # Click sign in
             await self._page.click('button[type="submit"]')
 
-            # Wait for navigation to feed or jobs page
-            await self._page.wait_for_url("**/feed/**", timeout=30000)
+            # Wait for redirect — LinkedIn may go to /feed, /feed/, /checkpoint, etc.
+            try:
+                await self._page.wait_for_url("**/feed**", timeout=15000)
+            except Exception:
+                # Check if we landed somewhere valid anyway
+                await self.random_delay(2, 3)
 
-            logger.info("[linkedin] Login successful")
+            current_url = self._page.url if self._page else ""
+            if "feed" in current_url or "jobs" in current_url or "mynetwork" in current_url:
+                logger.info("[linkedin] Login successful")
+                return True
+
+            if "challenge" in current_url or "checkpoint" in current_url:
+                logger.error("[linkedin] Security challenge detected — login manually once, then retry")
+                return False
+
+            if "login" in current_url:
+                logger.error("[linkedin] Still on login page — credentials may be wrong")
+                return False
+
+            # Unknown page but not login — might still be OK
+            logger.warning(f"[linkedin] Unexpected post-login URL: {current_url} — proceeding")
             return True
 
         except Exception as e:
