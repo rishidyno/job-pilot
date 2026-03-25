@@ -12,10 +12,11 @@
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from bson import ObjectId
 from database import get_collection
 from appliers.applier_manager import applier_manager
+from services.auth_service import get_current_user_id
 from utils.helpers import utc_now
 from utils.logger import logger
 
@@ -29,10 +30,11 @@ async def list_applications(
     sort_order: str = Query("desc"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    user_id: str = Depends(get_current_user_id),
 ):
     """List all applications with optional filtering."""
     apps_col = get_collection("applications")
-    query = {}
+    query = {"user_id": user_id}
     if status:
         query["status"] = status
 
@@ -48,11 +50,11 @@ async def list_applications(
 
 
 @router.get("/{app_id}")
-async def get_application(app_id: str):
+async def get_application(app_id: str, user_id: str = Depends(get_current_user_id)):
     """Get a single application with full details and event timeline."""
     apps_col = get_collection("applications")
     try:
-        app = await apps_col.find_one({"_id": ObjectId(app_id)})
+        app = await apps_col.find_one({"_id": ObjectId(app_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid application ID")
     if not app:
@@ -62,7 +64,7 @@ async def get_application(app_id: str):
 
 
 @router.post("")
-async def create_application(job_id: str, force: bool = False):
+async def create_application(job_id: str, force: bool = False, user_id: str = Depends(get_current_user_id)):
     """
     Track a job application — creates an application record.
     Opens the job URL for manual apply.
@@ -70,16 +72,17 @@ async def create_application(job_id: str, force: bool = False):
     jobs_col = get_collection("jobs")
     apps_col = get_collection("applications")
 
-    job = await jobs_col.find_one({"_id": ObjectId(job_id)})
+    job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    existing = await apps_col.find_one({"job_id": job_id})
+    existing = await apps_col.find_one({"job_id": job_id, "user_id": user_id})
     if existing:
         raise HTTPException(status_code=400, detail="Already applied to this job")
 
     app_doc = {
         "job_id": job_id,
+        "user_id": user_id,
         "status": "pending",
         "portal": job.get("portal", "unknown"),
         "job_title": job["title"],
@@ -108,7 +111,7 @@ async def create_application(job_id: str, force: bool = False):
 
 
 @router.patch("/{app_id}")
-async def update_application(app_id: str, status: Optional[str] = None, notes: Optional[str] = None):
+async def update_application(app_id: str, status: Optional[str] = None, notes: Optional[str] = None, user_id: str = Depends(get_current_user_id)):
     """
     Update an application's status or notes.
     
@@ -129,7 +132,7 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
             "description": f"Status changed to {status}",
         }
         await apps_col.update_one(
-            {"_id": ObjectId(app_id)},
+            {"_id": ObjectId(app_id), "user_id": user_id},
             {"$push": {"events": event}}
         )
 
@@ -137,7 +140,7 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
         update_data["notes"] = notes
 
     result = await apps_col.update_one(
-        {"_id": ObjectId(app_id)},
+        {"_id": ObjectId(app_id), "user_id": user_id},
         {"$set": update_data}
     )
 
@@ -148,10 +151,10 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
 
 
 @router.post("/{app_id}/retry")
-async def retry_application(app_id: str):
+async def retry_application(app_id: str, user_id: str = Depends(get_current_user_id)):
     """Retry a failed application."""
     apps_col = get_collection("applications")
-    app = await apps_col.find_one({"_id": ObjectId(app_id)})
+    app = await apps_col.find_one({"_id": ObjectId(app_id), "user_id": user_id})
 
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")

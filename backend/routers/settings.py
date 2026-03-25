@@ -12,10 +12,11 @@
 """
 
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from database import get_collection
 from config import settings
+from services.auth_service import get_current_user_id
 from schedulers.job_scheduler import get_scheduler
 from utils.helpers import utc_now
 from utils.logger import logger
@@ -33,7 +34,7 @@ class MarkdownContent(BaseModel):
 
 
 @router.get("/rules")
-async def get_rules():
+async def get_rules(user_id: str = Depends(get_current_user_id)):
     """Get the resume/cover letter generation rules."""
     try:
         with open(RULES_PATH, "r") as f:
@@ -43,7 +44,7 @@ async def get_rules():
 
 
 @router.put("/rules")
-async def update_rules(data: MarkdownContent):
+async def update_rules(data: MarkdownContent, user_id: str = Depends(get_current_user_id)):
     """Update the resume/cover letter generation rules."""
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(RULES_PATH, "w") as f:
@@ -52,7 +53,7 @@ async def update_rules(data: MarkdownContent):
 
 
 @router.get("/profile-md")
-async def get_profile_md():
+async def get_profile_md(user_id: str = Depends(get_current_user_id)):
     """Get the candidate profile markdown."""
     try:
         with open(PROFILE_PATH, "r") as f:
@@ -62,7 +63,7 @@ async def get_profile_md():
 
 
 @router.put("/profile-md")
-async def update_profile_md(data: MarkdownContent):
+async def update_profile_md(data: MarkdownContent, user_id: str = Depends(get_current_user_id)):
     """Update the candidate profile markdown."""
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(PROFILE_PATH, "w") as f:
@@ -71,20 +72,24 @@ async def update_profile_md(data: MarkdownContent):
 
 
 @router.get("/profile")
-async def get_profile():
+async def get_profile(user_id: str = Depends(get_current_user_id)):
     """Get the user profile and preferences."""
     profile_col = get_collection("user_profile")
-    profile = await profile_col.find_one({})
+    profile = await profile_col.find_one({"user_id": user_id})
 
     if not profile:
         # Create default profile from settings
+        users_col = get_collection("users")
+        from bson import ObjectId
+        user = await users_col.find_one({"_id": ObjectId(user_id)})
         profile = {
-            "full_name": "Rishi Raj",
-            "email": "rishiraj727909.work@gmail.com",
-            "phone": "+91-8210239176",
-            "current_role": "SDE-1",
-            "current_company": "Amazon",
-            "total_experience_years": 1.5,
+            "user_id": user_id,
+            "full_name": user["full_name"] if user else "",
+            "email": user["email"] if user else "",
+            "phone": "",
+            "current_role": "",
+            "current_company": "",
+            "total_experience_years": 0,
             "target_roles": settings.target_roles_list,
             "target_locations": settings.target_locations_list,
             "primary_skills": settings.target_skills_list,
@@ -101,16 +106,17 @@ async def get_profile():
 
 
 @router.put("/profile")
-async def update_profile(data: dict):
+async def update_profile(data: dict, user_id: str = Depends(get_current_user_id)):
     """Update user profile and preferences."""
     profile_col = get_collection("user_profile")
     data["updated_at"] = utc_now()
 
     # Remove _id if present (can't update _id)
     data.pop("_id", None)
+    data.pop("user_id", None)
 
     result = await profile_col.update_one(
-        {},  # Update the single profile document
+        {"user_id": user_id},
         {"$set": data},
         upsert=True,
     )
@@ -119,7 +125,7 @@ async def update_profile(data: dict):
 
 
 @router.get("/scheduler")
-async def get_scheduler_status():
+async def get_scheduler_status(user_id: str = Depends(get_current_user_id)):
     """Get current scheduler status and upcoming jobs."""
     scheduler = get_scheduler()
 
@@ -144,7 +150,7 @@ async def get_scheduler_status():
 
 
 @router.get("/portals")
-async def get_portal_status():
+async def get_portal_status(user_id: str = Depends(get_current_user_id)):
     """
     Get connection status for all supported portals.
     Shows which portals have credentials configured.
@@ -186,7 +192,7 @@ async def get_portal_status():
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(user_id: str = Depends(get_current_user_id)):
     """Simple health check endpoint."""
     from services.ai_service import ai_service
     return {

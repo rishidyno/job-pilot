@@ -119,6 +119,19 @@ class Settings(BaseSettings):
     MIN_MATCH_SCORE_TO_APPLY: int = 70
 
     # ─────────────────────────────────────
+    # AUTH / JWT
+    # ─────────────────────────────────────
+
+    # Secret key for signing JWT tokens (change in production!)
+    JWT_SECRET_KEY: str = "jobpilot-super-secret-change-me-in-production"
+
+    # JWT algorithm
+    JWT_ALGORITHM: str = "HS256"
+
+    # Token expiry in hours
+    JWT_EXPIRY_HOURS: int = 72
+
+    # ─────────────────────────────────────
     # ADVANCED / DEVELOPMENT
     # ─────────────────────────────────────
 

@@ -54,6 +54,8 @@ async def connect_db() -> None:
 
     logger.info(f"Connecting to MongoDB at {settings.MONGODB_URI}...")
 
+    import certifi
+
     # Create the async Motor client
     # maxPoolSize controls how many concurrent connections we allow
     _client = AsyncIOMotorClient(
@@ -61,6 +63,7 @@ async def connect_db() -> None:
         maxPoolSize=50,           # Max concurrent connections
         minPoolSize=5,            # Keep at least 5 connections warm
         serverSelectionTimeoutMS=5000,  # Fail fast if MongoDB is down
+        tlsCAFile=certifi.where(),     # CA bundle for Atlas SSL
     )
 
     # Select the database
@@ -124,6 +127,9 @@ async def _create_indexes() -> None:
 
     # ── Scrape logs ──
     await db.scrape_logs.create_index([("started_at", -1)], name="scrape_log_date")
+
+    # ── Users ──
+    await db.users.create_index([("email", 1)], unique=True, name="unique_email")
 
     logger.info("✅ Database indexes created/verified")
 

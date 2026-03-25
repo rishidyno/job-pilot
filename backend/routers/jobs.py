@@ -13,11 +13,12 @@
 """
 
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from bson import ObjectId
 from database import get_collection
 from models.job import JobUpdate, JobStatus
 from services.job_matcher import job_matcher
+from services.auth_service import get_current_user_id
 from scrapers.scraper_manager import scraper_manager
 from config import settings
 from utils.logger import logger
@@ -57,6 +58,7 @@ async def list_jobs(
     sort_order: str = Query("desc", description="Sort direction: asc or desc"),
     skip: int = Query(0, ge=0, description="Pagination offset"),
     limit: int = Query(50, ge=1, le=200, description="Page size"),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     List all jobs with optional filtering, sorting, and pagination.
@@ -67,7 +69,7 @@ async def list_jobs(
     jobs_col = get_collection("jobs")
 
     # Build the query filter
-    query = {}
+    query = {"user_id": user_id}
     if status:
         query["status"] = status
     if portal:
@@ -101,7 +103,7 @@ async def list_jobs(
 
 
 @router.post("/scrape")
-async def trigger_scrape(portals: Optional[List[str]] = None):
+async def trigger_scrape(portals: Optional[List[str]] = None, user_id: str = Depends(get_current_user_id)):
     """Trigger a manual scrape run with live status tracking."""
     import asyncio
 
@@ -163,13 +165,13 @@ async def trigger_scrape(portals: Optional[List[str]] = None):
 
 
 @router.get("/scrape/status")
-async def get_scrape_status():
+async def get_scrape_status(user_id: str = Depends(get_current_user_id)):
     """Get live scrape status."""
     return {k: v for k, v in _scrape_status.items() if k != "_task"}
 
 
 @router.post("/scrape/stop")
-async def stop_scrape():
+async def stop_scrape(user_id: str = Depends(get_current_user_id)):
     """Force stop the scraper immediately."""
     if not _scrape_status["running"]:
         raise HTTPException(status_code=400, detail="No scrape running")
@@ -185,12 +187,12 @@ async def stop_scrape():
 
 
 @router.get("/{job_id}")
-async def get_job(job_id: str):
+async def get_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     """Get a single job by ID with full details."""
     jobs_col = get_collection("jobs")
 
     try:
-        job = await jobs_col.find_one({"_id": ObjectId(job_id)})
+        job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
@@ -202,7 +204,7 @@ async def get_job(job_id: str):
 
 
 @router.patch("/{job_id}")
-async def update_job(job_id: str, update: JobUpdate):
+async def update_job(job_id: str, update: JobUpdate, user_id: str = Depends(get_current_user_id)):
     """
     Update a job's status, notes, apply mode, etc.
     
@@ -222,7 +224,7 @@ async def update_job(job_id: str, update: JobUpdate):
 
     try:
         result = await jobs_col.update_one(
-            {"_id": ObjectId(job_id)},
+            {"_id": ObjectId(job_id), "user_id": user_id},
             {"$set": update_data}
         )
     except Exception:
@@ -235,11 +237,11 @@ async def update_job(job_id: str, update: JobUpdate):
 
 
 @router.delete("/{job_id}")
-async def delete_job(job_id: str):
+async def delete_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     """Remove a job from the database."""
     jobs_col = get_collection("jobs")
     try:
-        result = await jobs_col.delete_one({"_id": ObjectId(job_id)})
+        result = await jobs_col.delete_one({"_id": ObjectId(job_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID")
 
@@ -250,20 +252,20 @@ async def delete_job(job_id: str):
 
 
 @router.post("/{job_id}/score")
-async def score_job(job_id: str):
+async def score_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     """Re-score a job using AI matching."""
     jobs_col = get_collection("jobs")
     resumes_col = get_collection("resumes")
 
     try:
-        job = await jobs_col.find_one({"_id": ObjectId(job_id)})
+        job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID")
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    base_resume = await resumes_col.find_one({"is_base": True})
+    base_resume = await resumes_col.find_one({"is_base": True, "user_id": user_id})
     resume_text = base_resume.get("raw_text", "") if base_resume else ""
 
     score_data = await job_matcher.score_job(

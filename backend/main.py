@@ -36,6 +36,7 @@ from routers.applications import router as applications_router
 from routers.resumes import router as resumes_router
 from routers.dashboard import router as dashboard_router
 from routers.settings import router as settings_router
+from routers.auth import router as auth_router
 
 
 # ─────────────────────────────────────
@@ -120,6 +121,7 @@ app.add_middleware(
 # ─────────────────────────────────────
 # Register API Routers
 # ─────────────────────────────────────
+app.include_router(auth_router)
 app.include_router(jobs_router)
 app.include_router(applications_router)
 app.include_router(resumes_router)

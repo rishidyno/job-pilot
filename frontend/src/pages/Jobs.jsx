@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { Search, Filter, SlidersHorizontal } from 'lucide-react'
+import { Search, Filter, SlidersHorizontal, Loader2 } from 'lucide-react'
 import JobCard from '../components/JobCard'
 import EmptyState from '../components/EmptyState'
 import api from '../api/client'
@@ -15,6 +15,7 @@ import { useApi, useApiMutation } from '../hooks/useApi'
 
 const STATUS_OPTIONS = ['all', 'new', 'reviewed', 'shortlisted', 'applied', 'interviewing', 'rejected', 'skipped']
 const PORTAL_OPTIONS = ['all', 'linkedin', 'naukri', 'wellfound', 'instahyre', 'indeed', 'glassdoor']
+const ALL_PORTALS = ['linkedin', 'naukri', 'wellfound', 'instahyre', 'indeed', 'glassdoor']
 const SORT_OPTIONS = [
   { value: 'match_score', label: 'Match Score' },
   { value: 'created_at', label: 'Date Found' },
@@ -29,6 +30,33 @@ export default function Jobs() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('match_score')
   const [page, setPage] = useState(0)
+
+  // Scrape modal state
+  const [showScrapeModal, setShowScrapeModal] = useState(false)
+  const [selectedPortals, setSelectedPortals] = useState(new Set(ALL_PORTALS))
+  const [scraping, setScraping] = useState(false)
+
+  const togglePortal = (p) => {
+    setSelectedPortals(prev => {
+      const next = new Set(prev)
+      next.has(p) ? next.delete(p) : next.add(p)
+      return next
+    })
+  }
+
+  const handleScrape = async () => {
+    if (selectedPortals.size === 0) return
+    setScraping(true)
+    setShowScrapeModal(false)
+    try {
+      await api.jobs.triggerScrape([...selectedPortals])
+    } catch (err) {
+      alert(`Scrape failed: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setScraping(false)
+      refetch()
+    }
+  }
 
   // Build query params from filter state
   const buildParams = useCallback(() => ({
@@ -109,12 +137,53 @@ export default function Jobs() {
   return (
     <div>
       {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {total} job{total !== 1 ? 's' : ''} found
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {total} job{total !== 1 ? 's' : ''} found
+          </p>
+        </div>
+        <button onClick={() => setShowScrapeModal(true)} disabled={scraping}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50">
+          {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {scraping ? 'Scraping...' : 'Scrape Now'}
+        </button>
       </div>
+
+      {/* Scrape Portal Selector Modal */}
+      {showScrapeModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowScrapeModal(false)}>
+          <div className="bg-white rounded-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Select Portals to Scrape</h3>
+            <p className="text-xs text-gray-500 mb-4">Choose which job sites to scrape from</p>
+            <div className="space-y-2 mb-5">
+              {ALL_PORTALS.map(p => (
+                <label key={p} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" checked={selectedPortals.has(p)} onChange={() => togglePortal(p)}
+                    className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                  <span className="text-sm text-gray-700 capitalize">{p}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center justify-between">
+              <button onClick={() => {
+                setSelectedPortals(prev => prev.size === ALL_PORTALS.length ? new Set() : new Set(ALL_PORTALS))
+              }} className="text-xs text-brand-600 hover:underline">
+                {selectedPortals.size === ALL_PORTALS.length ? 'Deselect All' : 'Select All'}
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowScrapeModal(false)}
+                  className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button onClick={handleScrape} disabled={selectedPortals.size === 0}
+                  className="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50">
+                  Scrape {selectedPortals.size} Portal{selectedPortals.size !== 1 ? 's' : ''}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters bar */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
@@ -162,7 +231,7 @@ export default function Jobs() {
           title="No jobs found"
           message="Try adjusting your filters, or run a scrape to find new jobs."
           action="Scrape Now"
-          onAction={() => api.jobs.triggerScrape()}
+          onAction={() => setShowScrapeModal(true)}
         />
       ) : (
         <div className="space-y-4">

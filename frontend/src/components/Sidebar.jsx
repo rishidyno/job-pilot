@@ -3,7 +3,8 @@
  */
 
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, Send, FileText, Settings, Rocket } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Send, FileText, Settings, Rocket, LogOut } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import clsx from 'clsx'
 
 const NAV_ITEMS = [
@@ -15,6 +16,8 @@ const NAV_ITEMS = [
 ]
 
 export default function Sidebar() {
+  const { user, logout } = useAuth()
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
       {/* Logo */}
@@ -47,10 +50,21 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="px-6 py-4 border-t border-gray-100">
+      {/* Footer with user info + logout */}
+      <div className="px-4 py-4 border-t border-gray-100">
+        {user && (
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-600 truncate">{user.full_name}</span>
+            <button
+              onClick={logout}
+              className="text-gray-400 hover:text-red-500 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <p className="text-xs text-gray-400">JobPilot v1.0.0</p>
-        <p className="text-xs text-gray-400">Built by Rishi Raj</p>
       </div>
     </aside>
   )

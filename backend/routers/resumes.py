@@ -16,13 +16,14 @@ import os
 import asyncio
 import aiofiles
 from typing import Optional
-from fastapi import APIRouter, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query, Depends
 from fastapi.responses import FileResponse
 from bson import ObjectId
 from database import get_collection
 from services.resume_tailor import resume_tailor
 from services.cover_letter_service import cover_letter_service
 from services.pdf_generator import pdf_generator
+from services.auth_service import get_current_user_id
 from config import settings
 from utils.helpers import utc_now
 from utils.logger import logger
@@ -34,7 +35,7 @@ BASE_RESUME_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..",
 
 
 @router.post("/upload-base")
-async def upload_base_resume(file: UploadFile = File(...)):
+async def upload_base_resume(file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)):
     """
     Upload your base resume (PDF).
     
@@ -73,9 +74,10 @@ async def upload_base_resume(file: UploadFile = File(...)):
 
     # Upsert base resume in DB (replace existing base)
     await resumes_col.update_one(
-        {"is_base": True},
+        {"is_base": True, "user_id": user_id},
         {"$set": {
             "is_base": True,
+            "user_id": user_id,
             "file_path_original_style": file_path,
             "original_filename": file.filename,
             "raw_text": raw_text,
@@ -102,10 +104,11 @@ async def list_resumes(
     is_base: Optional[bool] = Query(None, description="Filter base vs tailored"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    user_id: str = Depends(get_current_user_id),
 ):
     """List all resume versions."""
     resumes_col = get_collection("resumes")
-    query = {}
+    query = {"user_id": user_id}
     if job_id:
         query["job_id"] = job_id
     if is_base is not None:
@@ -122,11 +125,11 @@ async def list_resumes(
 
 
 @router.get("/{resume_id}")
-async def get_resume(resume_id: str):
+async def get_resume(resume_id: str, user_id: str = Depends(get_current_user_id)):
     """Get a specific resume by ID."""
     resumes_col = get_collection("resumes")
     try:
-        resume = await resumes_col.find_one({"_id": ObjectId(resume_id)})
+        resume = await resumes_col.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid resume ID")
     if not resume:
@@ -136,7 +139,7 @@ async def get_resume(resume_id: str):
 
 
 @router.post("/tailor")
-async def tailor_resume(job_id: str):
+async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)):
     """
     Generate a tailored resume for a specific job.
     
@@ -147,12 +150,12 @@ async def tailor_resume(job_id: str):
     resumes_col = get_collection("resumes")
 
     # Get the job
-    job = await jobs_col.find_one({"_id": ObjectId(job_id)})
+    job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
     # Get base resume
-    base_resume = await resumes_col.find_one({"is_base": True})
+    base_resume = await resumes_col.find_one({"is_base": True, "user_id": user_id})
     if not base_resume:
         raise HTTPException(status_code=400, detail="No base resume found. Upload one first.")
 
@@ -178,6 +181,7 @@ async def tailor_resume(job_id: str):
     # Save to DB
     resume_doc = {
         "is_base": False,
+        "user_id": user_id,
         "job_id": job_id,
         "base_resume_id": str(base_resume["_id"]),
         "content_json": tailored,
@@ -205,17 +209,17 @@ async def tailor_resume(job_id: str):
 
 
 @router.post("/cover-letter")
-async def generate_cover_letter(job_id: str, tone: str = "professional"):
+async def generate_cover_letter(job_id: str, tone: str = "professional", user_id: str = Depends(get_current_user_id)):
     """Generate a cover letter for a specific job."""
     jobs_col = get_collection("jobs")
     resumes_col = get_collection("resumes")
     cl_col = get_collection("cover_letters")
 
-    job = await jobs_col.find_one({"_id": ObjectId(job_id)})
+    job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    base_resume = await resumes_col.find_one({"is_base": True})
+    base_resume = await resumes_col.find_one({"is_base": True, "user_id": user_id})
     resume_text = base_resume.get("raw_text", "") if base_resume else ""
 
     # Generate with AI
@@ -235,6 +239,7 @@ async def generate_cover_letter(job_id: str, tone: str = "professional"):
     # Save to DB
     cl_doc = {
         "job_id": job_id,
+        "user_id": user_id,
         "content": letter.get("full_text", ""),
         "file_path": pdf_path,
         "tone": tone,
@@ -251,10 +256,10 @@ async def generate_cover_letter(job_id: str, tone: str = "professional"):
 
 
 @router.get("/download/{resume_id}")
-async def download_resume(resume_id: str, style: str = "original", preview: bool = False):
+async def download_resume(resume_id: str, style: str = "original", preview: bool = False, user_id: str = Depends(get_current_user_id)):
     """Download or preview a resume PDF file."""
     resumes_col = get_collection("resumes")
-    resume = await resumes_col.find_one({"_id": ObjectId(resume_id)})
+    resume = await resumes_col.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
 
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")

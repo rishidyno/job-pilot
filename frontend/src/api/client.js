@@ -23,12 +23,24 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// ── Request interceptor — attach JWT token ──
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
 // ── Response interceptor for consistent error handling ──
 http.interceptors.response.use(
   (response) => response,
   (error) => {
     const message = error.response?.data?.detail || error.message || 'Unknown error'
     console.error(`[API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}: ${message}`)
+    // Redirect to login on 401/403
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('token')
+      if (window.location.pathname !== '/login') window.location.href = '/login'
+    }
     return Promise.reject(error)
   }
 )
@@ -38,6 +50,13 @@ http.interceptors.response.use(
  * Each method returns the Axios promise.
  */
 const api = {
+  // ── Auth ──
+  auth: {
+    login: (data) => http.post('/api/auth/login', data),
+    register: (data) => http.post('/api/auth/register', data),
+    me: () => http.get('/api/auth/me'),
+  },
+
   // ── Dashboard ──
   dashboard: {
     getStats: () => http.get('/api/dashboard/stats'),
@@ -53,7 +72,10 @@ const api = {
     get: (id) => http.get(`/api/jobs/${id}`),
     update: (id, data) => http.patch(`/api/jobs/${id}`, data),
     delete: (id) => http.delete(`/api/jobs/${id}`),
-    triggerScrape: (portals = null) => http.post('/api/jobs/scrape', null, { params: portals ? { portals } : {} }),
+    triggerScrape: (portals = null) => http.post('/api/jobs/scrape', null, portals ? {
+      params: { portals },
+      paramsSerializer: { indexes: null },
+    } : {}),
     scrapeStatus: () => http.get('/api/jobs/scrape/status'),
     scrapeStop: () => http.post('/api/jobs/scrape/stop'),
     score: (id) => http.post(`/api/jobs/${id}/score`, null, { timeout: 120000 }),
@@ -75,10 +97,7 @@ const api = {
     uploadBase: (file) => {
       const formData = new FormData()
       formData.append('file', file)
-      return http.post('/api/resumes/upload-base', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000,
-      })
+      return http.post('/api/resumes/upload-base', formData, { timeout: 120000 })
     },
     tailor: (jobId) => http.post('/api/resumes/tailor', null, { params: { job_id: jobId }, timeout: 120000 }),
     generateCoverLetter: (jobId, tone = 'professional') =>

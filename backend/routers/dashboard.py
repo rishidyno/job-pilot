@@ -11,15 +11,16 @@
 """
 
 from datetime import datetime, timedelta
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from database import get_collection
+from services.auth_service import get_current_user_id
 from config import settings
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 
 @router.get("/stats")
-async def get_dashboard_stats():
+async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
     """
     Get key metrics for the dashboard overview cards.
     
@@ -32,26 +33,30 @@ async def get_dashboard_stats():
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
 
+    uf = {"user_id": user_id}
+
     # Run all counts in parallel-ish (Motor handles this efficiently)
-    total_jobs = await jobs_col.count_documents({})
-    new_today = await jobs_col.count_documents({"created_at": {"$gte": today_start}})
-    new_this_week = await jobs_col.count_documents({"created_at": {"$gte": week_start}})
+    total_jobs = await jobs_col.count_documents(uf)
+    new_today = await jobs_col.count_documents({**uf, "created_at": {"$gte": today_start}})
+    new_this_week = await jobs_col.count_documents({**uf, "created_at": {"$gte": week_start}})
     high_matches = await jobs_col.count_documents({
+        **uf,
         "match_score": {"$gte": settings.MIN_MATCH_SCORE_TO_APPLY},
         "status": {"$in": ["new", "reviewed", "shortlisted"]},
     })
 
-    total_applied = await apps_col.count_documents({"status": {"$ne": "failed"}})
+    total_applied = await apps_col.count_documents({**uf, "status": {"$ne": "failed"}})
     applied_today = await apps_col.count_documents({
+        **uf,
         "applied_at": {"$gte": today_start},
         "status": {"$ne": "failed"},
     })
-    interviews = await apps_col.count_documents({"status": "interview"})
-    offers = await apps_col.count_documents({"status": "offered"})
-    failed = await apps_col.count_documents({"status": "failed"})
+    interviews = await apps_col.count_documents({**uf, "status": "interview"})
+    offers = await apps_col.count_documents({**uf, "status": "offered"})
+    failed = await apps_col.count_documents({**uf, "status": "failed"})
 
     # Average match score
-    pipeline = [{"$group": {"_id": None, "avg_score": {"$avg": "$match_score"}}}]
+    pipeline = [{"$match": uf}, {"$group": {"_id": None, "avg_score": {"$avg": "$match_score"}}}]
     avg_result = await jobs_col.aggregate(pipeline).to_list(1)
     avg_score = round(avg_result[0]["avg_score"], 1) if avg_result and avg_result[0]["avg_score"] else 0
 
@@ -70,7 +75,7 @@ async def get_dashboard_stats():
 
 
 @router.get("/pipeline")
-async def get_pipeline():
+async def get_pipeline(user_id: str = Depends(get_current_user_id)):
     """
     Get application pipeline data for the Kanban-style view.
     
@@ -83,14 +88,14 @@ async def get_pipeline():
     pipeline_data = {}
 
     for status in statuses:
-        count = await apps_col.count_documents({"status": status})
+        count = await apps_col.count_documents({"status": status, "user_id": user_id})
         pipeline_data[status] = count
 
     return {"pipeline": pipeline_data}
 
 
 @router.get("/portals")
-async def get_portal_stats():
+async def get_portal_stats(user_id: str = Depends(get_current_user_id)):
     """
     Get per-portal breakdown of jobs and applications.
     
@@ -99,6 +104,7 @@ async def get_portal_stats():
     jobs_col = get_collection("jobs")
 
     pipeline = [
+        {"$match": {"user_id": user_id}},
         {"$group": {
             "_id": "$portal",
             "total": {"$sum": 1},
@@ -125,7 +131,7 @@ async def get_portal_stats():
 
 
 @router.get("/timeline")
-async def get_timeline():
+async def get_timeline(user_id: str = Depends(get_current_user_id)):
     """
     Get daily job counts for the past 30 days.
     Used for the timeline chart on the dashboard.
@@ -134,7 +140,7 @@ async def get_timeline():
     start_date = datetime.utcnow() - timedelta(days=30)
 
     pipeline = [
-        {"$match": {"created_at": {"$gte": start_date}}},
+        {"$match": {"created_at": {"$gte": start_date}, "user_id": user_id}},
         {"$group": {
             "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
             "count": {"$sum": 1},
@@ -154,15 +160,15 @@ async def get_timeline():
 
 
 @router.get("/recent-activity")
-async def get_recent_activity():
+async def get_recent_activity(user_id: str = Depends(get_current_user_id)):
     """Get the 10 most recent actions (new jobs, applications, status changes)."""
     jobs_col = get_collection("jobs")
     apps_col = get_collection("applications")
 
     # Recent jobs
-    recent_jobs = await jobs_col.find().sort("created_at", -1).limit(5).to_list(5)
+    recent_jobs = await jobs_col.find({"user_id": user_id}).sort("created_at", -1).limit(5).to_list(5)
     # Recent applications
-    recent_apps = await apps_col.find().sort("applied_at", -1).limit(5).to_list(5)
+    recent_apps = await apps_col.find({"user_id": user_id}).sort("applied_at", -1).limit(5).to_list(5)
 
     activity = []
     for job in recent_jobs:
