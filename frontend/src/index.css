@@ -3,13 +3,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar */
+/* ── Light scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-/* Targeted transitions (not global * which causes layout thrashing) */
+/* ── Dark scrollbar ── */
+.dark ::-webkit-scrollbar-track { background: #1e293b; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Targeted transitions */
 a, button, input, select, textarea,
 [class*="bg-"], [class*="text-"], [class*="border-"], [class*="shadow"] {
   transition-property: color, background-color, border-color, opacity, box-shadow, transform;
@@ -32,6 +37,10 @@ a, button, input, select, textarea,
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 0.5rem;
 }
+.dark .skeleton {
+  background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
+  background-size: 200% 100%;
+}
 
 /* Toast slide-in */
 @keyframes toast-in {
@@ -50,3 +59,7 @@ a, button, input, select, textarea,
 @keyframes slide-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 .sidebar-overlay { animation: fade-in 0.2s ease-out; }
 .sidebar-slide { animation: slide-in-left 0.25s ease-out; }
+
+/* Hide scrollbar for horizontal scroll areas */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

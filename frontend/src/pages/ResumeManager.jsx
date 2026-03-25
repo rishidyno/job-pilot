@@ -52,22 +52,22 @@ export default function ResumeManager() {
   return (
     <div>
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Resume Manager</h1>
-        <p className="text-sm text-gray-500 mt-1">Edit your LaTeX resume and view tailored versions</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Resume Manager</h1>
+        <p className="text-sm text-gray-500 dark:text-surface-400 mt-1">Edit your LaTeX resume and view tailored versions</p>
       </div>
 
       {/* LaTeX Editor */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-6 mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Base Resume (LaTeX)</h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Base Resume (LaTeX)</h2>
+            <p className="text-xs text-gray-500 dark:text-surface-400 mt-1">
               Source-of-truth resume. AI tailors copies for each job.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handlePreviewBase}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700"
               aria-label="Preview resume as PDF">
               <Eye className="w-4 h-4" /> <span className="hidden sm:inline">Preview</span> PDF
             </button>
@@ -86,7 +86,7 @@ export default function ResumeManager() {
           <textarea
             value={editorContent}
             onChange={(e) => setLatex(e.target.value)}
-            className="w-full h-[400px] sm:h-[500px] font-mono text-xs bg-gray-900 text-green-400 p-3 sm:p-4 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+            className="w-full h-[400px] sm:h-[500px] font-mono text-xs bg-gray-900 dark:bg-surface-950 text-green-400 p-3 sm:p-4 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
             spellCheck={false}
             placeholder="Paste your LaTeX resume here..."
             aria-label="LaTeX resume editor"
@@ -98,14 +98,14 @@ export default function ResumeManager() {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-brand-500" />
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Tailored Versions</h2>
-          <span className="text-sm text-gray-400">({tailoredResumes.length})</span>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Tailored Versions</h2>
+          <span className="text-sm text-gray-400 dark:text-surface-500">({tailoredResumes.length})</span>
         </div>
 
         {listLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={i} className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4">
                 <div className="flex items-center gap-3">
                   <Skeleton className="w-8 h-8 rounded" />
                   <div className="flex-1 space-y-1.5">
@@ -125,22 +125,22 @@ export default function ResumeManager() {
         ) : (
           <div className="space-y-3">
             {tailoredResumes.map(resume => (
-              <div key={resume._id} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={resume._id} className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText className="w-8 h-8 text-indigo-400 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
+                      <p className="text-sm font-medium text-gray-800 dark:text-surface-200 truncate">
                         Tailored for Job #{resume.job_id?.slice(-6)}
                       </p>
-                      <p className="text-xs text-gray-500">{timeAgo(resume.created_at)}</p>
+                      <p className="text-xs text-gray-500 dark:text-surface-400">{timeAgo(resume.created_at)}</p>
                     </div>
                   </div>
                   <button onClick={() => {
                     setPdfTitle(`Tailored #${resume.job_id?.slice(-6)}`)
                     setPdfUrl(api.resumes.compileUrl(resume._id))
                   }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 border border-brand-200 text-brand-700 rounded-lg hover:bg-brand-100 shrink-0"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 text-brand-700 dark:text-brand-300 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/40 shrink-0"
                     aria-label="View tailored resume PDF">
                     <Eye className="w-3 h-3" /> View
                   </button>
@@ -148,10 +148,10 @@ export default function ResumeManager() {
 
                 {resume.changes_made?.length > 0 && (
                   <div className="mt-3 pl-11">
-                    <p className="text-xs text-gray-500 font-medium mb-1">Changes made:</p>
+                    <p className="text-xs text-gray-500 dark:text-surface-400 font-medium mb-1">Changes made:</p>
                     <ul className="space-y-0.5">
                       {resume.changes_made.map((change, i) => (
-                        <li key={i} className="text-xs text-gray-400 flex items-start gap-1.5">
+                        <li key={i} className="text-xs text-gray-400 dark:text-surface-500 flex items-start gap-1.5">
                           <span className="text-brand-400 mt-0.5">•</span> {change}
                         </li>
                       ))}

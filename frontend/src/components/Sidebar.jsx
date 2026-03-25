@@ -1,11 +1,12 @@
 /**
  * JOBPILOT — Sidebar Navigation
- * Responsive: full sidebar on desktop, closeable drawer on mobile.
+ * With dark mode toggle.
  */
 
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Briefcase, Send, FileText, Settings, Rocket, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Send, FileText, Settings, Rocket, LogOut, X, Moon, Sun } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
 import clsx from 'clsx'
 
 const NAV_ITEMS = [
@@ -18,45 +19,39 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ onClose }) {
   const { user, logout } = useAuth()
+  const { dark, toggle } = useTheme()
 
   return (
-    <aside className="w-64 h-full bg-white border-r border-gray-200 flex flex-col shrink-0">
-      {/* Logo + mobile close */}
-      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100">
+    <aside className="w-64 h-full bg-white dark:bg-surface-900 border-r border-gray-200 dark:border-surface-700 flex flex-col shrink-0">
+      {/* Logo */}
+      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 dark:border-surface-800">
         <div className="flex items-center gap-2.5">
-          <Rocket className="w-6 h-6 text-brand-600" />
-          <span className="text-lg font-bold tracking-tight text-gray-900">
-            Job<span className="text-brand-600">Pilot</span>
+          <Rocket className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+          <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
+            Job<span className="text-brand-600 dark:text-brand-400">Pilot</span>
           </span>
         </div>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 lg:hidden"
-            aria-label="Close navigation menu"
-          >
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-surface-800 lg:hidden"
+            aria-label="Close navigation menu">
+            <X className="w-5 h-5 text-gray-500 dark:text-surface-400" />
           </button>
         )}
       </div>
 
-      {/* Navigation links */}
+      {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {NAV_ITEMS.map(({ path, label, icon: Icon }) => (
-          <NavLink
-            key={path}
-            to={path}
-            end={path === '/'}
-            onClick={onClose}
+          <NavLink key={path} to={path} end={path === '/'} onClick={onClose}
             className={({ isActive }) =>
               clsx(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium',
                 isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300'
+                  : 'text-gray-600 dark:text-surface-400 hover:bg-gray-50 dark:hover:bg-surface-800 hover:text-gray-900 dark:hover:text-white'
               )
-            }
-          >
+            }>
             <Icon className="w-5 h-5" />
             {label}
           </NavLink>
@@ -64,21 +59,25 @@ export default function Sidebar({ onClose }) {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-gray-100">
+      <div className="px-4 py-4 border-t border-gray-100 dark:border-surface-800 space-y-3">
+        {/* Theme toggle */}
+        <button onClick={toggle}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-surface-400 hover:bg-gray-50 dark:hover:bg-surface-800"
+          aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {dark ? 'Light Mode' : 'Dark Mode'}
+        </button>
+
         {user && (
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-600 truncate max-w-[160px]">{user.full_name}</span>
-            <button
-              onClick={logout}
-              className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50"
-              title="Logout"
-              aria-label="Logout"
-            >
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600 dark:text-surface-400 truncate max-w-[160px]">{user.full_name}</span>
+            <button onClick={logout}
+              className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+              title="Logout" aria-label="Logout">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         )}
-        <p className="text-xs text-gray-400">JobPilot v1.0.0</p>
       </div>
     </aside>
   )

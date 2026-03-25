@@ -37,22 +37,22 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-surface-950 px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Rocket className="w-8 h-8 text-brand-600" />
-          <span className="text-2xl font-bold text-gray-900">
-            Job<span className="text-brand-600">Pilot</span>
+          <Rocket className="w-8 h-8 text-brand-600 dark:text-brand-400" />
+          <span className="text-2xl font-bold text-gray-900 dark:text-white">
+            Job<span className="text-brand-600 dark:text-brand-400">Pilot</span>
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 text-center">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-surface-800 rounded-xl shadow-sm border border-gray-200 dark:border-surface-700 p-5 sm:p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white text-center">
             {isRegister ? 'Create Account' : 'Sign In'}
           </h2>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2" role="alert">{error}</div>
+            <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm rounded-lg px-3 py-2" role="alert">{error}</div>
           )}
 
           {isRegister && (
@@ -60,7 +60,7 @@ export default function Login() {
               <label htmlFor="fullname" className="sr-only">Full Name</label>
               <input id="fullname" type="text" placeholder="Full Name" value={fullName}
                 onChange={(e) => setFullName(e.target.value)} required autoComplete="name"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                className="w-full px-3 py-2.5 border border-gray-300 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
           )}
 
@@ -68,14 +68,14 @@ export default function Login() {
             <label htmlFor="email" className="sr-only">Email</label>
             <input id="email" type="email" placeholder="Email" value={email}
               onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              className="w-full px-3 py-2.5 border border-gray-300 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
 
           <div>
             <label htmlFor="password" className="sr-only">Password</label>
             <input id="password" type="password" placeholder="Password" value={password}
               onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete={isRegister ? 'new-password' : 'current-password'}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              className="w-full px-3 py-2.5 border border-gray-300 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
 
           <button type="submit" disabled={loading}
@@ -83,11 +83,11 @@ export default function Login() {
             {loading ? 'Please wait...' : isRegister ? 'Register' : 'Sign In'}
           </button>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 dark:text-surface-400">
             {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button type="button"
               onClick={() => { setIsRegister(!isRegister); setError('') }}
-              className="text-brand-600 font-medium hover:underline">
+              className="text-brand-600 dark:text-brand-400 font-medium hover:underline">
               {isRegister ? 'Sign In' : 'Register'}
             </button>
           </p>
