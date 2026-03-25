@@ -23,8 +23,8 @@ db: ## Start MongoDB via Docker
 	docker-compose up -d mongodb
 	@echo "✅ MongoDB running on localhost:27017"
 
-backend: ## Start the backend server
-	cd backend && . venv/bin/activate && uvicorn main:app --reload --port 8000
+backend: ## Start the backend server (no --reload; reload breaks Playwright scrapers)
+	cd backend && uvicorn main:app --port 8000
 
 frontend: ## Start the frontend dev server
 	cd frontend && npm run dev
