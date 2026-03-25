@@ -206,6 +206,15 @@ async def random_delay(min_seconds: int = 2, max_seconds: int = 5) -> None:
     await asyncio.sleep(delay)
 
 
+def clean_url(url: str) -> str:
+    """Strip query parameters and fragments from a URL, keeping only the base path."""
+    if not url:
+        return ""
+    from urllib.parse import urlparse, urlunparse
+    parsed = urlparse(url)
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+
+
 def extract_domain(url: str) -> str:
     """
     Extract the domain from a URL.

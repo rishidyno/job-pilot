@@ -41,7 +41,7 @@ from services.telegram_service import telegram_service
 from database import get_collection
 from config import settings
 from utils.logger import logger
-from utils.helpers import utc_now, generate_job_hash
+from utils.helpers import utc_now, generate_job_hash, clean_url
 
 
 # ─────────────────────────────────────
@@ -158,6 +158,7 @@ class ScraperManager:
                     job_doc = job_data.model_dump()
                     job_doc["job_hash"] = job_hash
                     job_doc["user_id"] = user_id
+                    job_doc["url"] = clean_url(job_doc.get("url", ""))
                     job_doc["created_at"] = utc_now()
                     job_doc["updated_at"] = utc_now()
                     job_doc["status"] = "new"
