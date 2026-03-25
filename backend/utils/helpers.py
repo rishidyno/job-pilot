@@ -207,12 +207,29 @@ async def random_delay(min_seconds: int = 2, max_seconds: int = 5) -> None:
 
 
 def clean_url(url: str) -> str:
-    """Strip query parameters and fragments from a URL, keeping only the base path."""
+    """Clean a URL: keep essential query params, strip only tracking noise."""
     if not url:
         return ""
-    from urllib.parse import urlparse, urlunparse
+    from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+
     parsed = urlparse(url)
-    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+
+    # For redirect URLs (e.g. indeed.com/rc/clk?jk=...) the query IS the link — keep it
+    if not parsed.path or parsed.path in ('/', '/rc/clk', '/pagead/clk'):
+        # Keep all params except known tracking ones
+        tracking = {'bb', 'fccid', 'vjs', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'}
+        params = {k: v[0] for k, v in parse_qs(parsed.query).items() if k not in tracking}
+        qs = urlencode(params) if params else parsed.query
+        return urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', qs, ''))
+
+    # For normal URLs, strip only tracking params but keep meaningful ones
+    tracking = {'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'fbclid', 'gclid'}
+    if parsed.query:
+        params = {k: v[0] for k, v in parse_qs(parsed.query).items() if k not in tracking}
+        qs = urlencode(params) if params else ''
+    else:
+        qs = ''
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', qs, ''))
 
 
 def extract_domain(url: str) -> str:

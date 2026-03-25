@@ -53,7 +53,11 @@ def test_sanitize_filename():
 
 
 def test_clean_url():
-    assert clean_url("https://example.com/jobs/123?ref=abc#top") == "https://example.com/jobs/123"
+    # Normal URLs: strip tracking params, keep path
+    assert "example.com/jobs/123" in clean_url("https://example.com/jobs/123?utm_source=abc&ref=x#top")
+    assert "utm_source" not in clean_url("https://example.com/jobs/123?utm_source=abc")
+    # Redirect URLs: preserve essential query params (like Indeed jk)
+    assert "jk=" in clean_url("https://in.indeed.com/rc/clk?jk=abc123&bb=tracking")
     assert clean_url("") == ""
 
 
