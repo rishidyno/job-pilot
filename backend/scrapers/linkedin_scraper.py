@@ -142,6 +142,7 @@ class LinkedInScraper(BaseScraper):
             List of JobCreate objects
         """
         all_jobs = []
+        seen_ids = set()
 
         # LinkedIn experience level mapping
         # f_E=2 → Entry level, f_E=3 → Associate, f_E=4 → Mid-Senior
@@ -150,7 +151,7 @@ class LinkedInScraper(BaseScraper):
         for role in roles[:3]:  # Limit to 3 roles to avoid rate limiting
             for location in locations[:2]:  # Top 2 locations per role
                 try:
-                    jobs = await self._search_single(role, location, experience_filter)
+                    jobs = await self._search_single(role, location, experience_filter, seen_ids)
                     all_jobs.extend(jobs)
                     await self.random_delay(3, 6)  # Extra delay between searches
                 except Exception as e:
@@ -164,6 +165,7 @@ class LinkedInScraper(BaseScraper):
         role: str,
         location: str,
         experience_filter: str,
+        seen_ids: set = None,
     ) -> List[JobCreate]:
         """
         Execute a single search query on LinkedIn.
@@ -177,6 +179,8 @@ class LinkedInScraper(BaseScraper):
             List of JobCreate objects from this search
         """
         jobs = []
+        if seen_ids is None:
+            seen_ids = set()
 
         # Build search URL with query params
         search_url = (
@@ -196,20 +200,49 @@ class LinkedInScraper(BaseScraper):
             await self._page.evaluate("window.scrollBy(0, 800)")
             await self.random_delay(1, 2)
 
-        # Extract job cards from the search results
-        # NOTE: These selectors may change as LinkedIn updates their UI
+        # Extract job cards using JS for cleaner data
         try:
-            job_cards = await self._page.query_selector_all(
-                ".jobs-search-results__list-item, .job-card-container"
-            )
+            jobs_data = await self._page.evaluate('''() => {
+                const results = [];
+                const cards = document.querySelectorAll('.jobs-search-results__list-item, .job-card-container, li[data-occludable-job-id]');
+                for (const card of cards) {
+                    try {
+                        const linkEl = card.querySelector('a[href*="/jobs/view/"]');
+                        if (!linkEl) continue;
+                        const href = linkEl.href || '';
+                        const idMatch = href.match(/\\/jobs\\/view\\/(\\d+)/);
+                        if (!idMatch) continue;
 
-            for card in job_cards[:15]:  # Max 15 per search
-                try:
-                    job = await self._parse_job_card(card)
-                    if job:
-                        jobs.append(job)
-                except Exception as e:
-                    logger.debug(f"[linkedin] Failed to parse a job card: {e}")
+                        // Get title from the link's direct text or first strong/span
+                        let title = linkEl.querySelector('.job-card-list__title, strong, .visually-hidden')?.innerText?.trim()
+                            || linkEl.innerText?.trim()?.split('\\n')[0]?.trim();
+
+                        const companyEl = card.querySelector('.job-card-container__primary-description, .artdeco-entity-lockup__subtitle');
+                        const locEl = card.querySelector('.job-card-container__metadata-item, .artdeco-entity-lockup__caption');
+
+                        results.push({
+                            title: title || '',
+                            company: companyEl?.innerText?.trim() || 'Unknown',
+                            location: locEl?.innerText?.trim() || '',
+                            external_id: idMatch[1],
+                        });
+                    } catch {}
+                }
+                return results;
+            }''')
+
+            for item in jobs_data[:15]:
+                if item['title'] and item['external_id'] and item['external_id'] not in seen_ids:
+                    seen_ids.add(item['external_id'])
+                    jobs.append(JobCreate(
+                        title=clean_text(item['title']),
+                        company=clean_text(item['company']),
+                        portal="linkedin",
+                        external_id=item['external_id'],
+                        url=f"https://www.linkedin.com/jobs/view/{item['external_id']}/",
+                        location=clean_text(item['location']) or None,
+                        apply_method="easy_apply",
+                    ))
 
         except Exception as e:
             logger.warning(f"[linkedin] Failed to find job cards: {e}")
