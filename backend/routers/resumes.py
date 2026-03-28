@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from database import get_collection
 from services.resume_tailor import resume_tailor
 from services.cover_letter_service import cover_letter_service
+from services.job_matcher import job_matcher
 from services.auth_service import get_current_user_id
 from utils.helpers import utc_now
 from utils.logger import logger
@@ -202,15 +203,33 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
     }
     insert = await resumes_col.insert_one(resume_doc)
 
+    # Re-score the job now that we have a tailored resume
+    from services.user_prefs import get_user_prefs
+    prefs = await get_user_prefs()
+    new_score = await job_matcher.quick_score(
+        job_title=job["title"],
+        job_skills=skills or [],
+        job_location=job.get("location", ""),
+        user_skills=prefs["primary_skills"],
+        user_target_locations=prefs["target_locations"],
+    )
+    # Boost score slightly since resume is now tailored for this job
+    new_score = min(100, new_score + 5)
+
     await jobs_col.update_one(
         {"_id": ObjectId(job_id), "user_id": user_id},
-        {"$set": {"tailored_resume_id": str(insert.inserted_id), "updated_at": utc_now()}}
+        {"$set": {
+            "tailored_resume_id": str(insert.inserted_id),
+            "match_score": new_score,
+            "updated_at": utc_now(),
+        }}
     )
 
     return {
         "success": True,
         "resume_id": str(insert.inserted_id),
         "changes_made": result.get("changes_made", []),
+        "new_score": new_score,
     }
 
 

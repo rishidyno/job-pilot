@@ -116,11 +116,11 @@ export default function Jobs() {
         setData(prev => prev ? {
           ...prev,
           jobs: prev.jobs.map(j => j._id === jobId
-            ? { ...j, tailored_resume_id: result.resume_id }
+            ? { ...j, tailored_resume_id: result.resume_id, match_score: result.new_score ?? j.match_score }
             : j
           )
         } : prev)
-        toast.success('Resume tailored successfully')
+        toast.success(`Resume tailored — score updated to ${result.new_score ?? '?'}/100`)
       }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Tailoring failed')
