@@ -3,11 +3,12 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 import { Briefcase, Send, Target, TrendingUp, AlertCircle, Award, RefreshCw, Square, Loader2 } from 'lucide-react'
 import StatsCard from '../components/StatsCard'
 import StatusBadge from '../components/StatusBadge'
 import ScrapeModal from '../components/ScrapeModal'
+import OnboardingModal from '../components/OnboardingModal'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
 import { useApi } from '../hooks/useApi'
@@ -26,12 +27,23 @@ export default function Dashboard() {
   const [scraping, setScraping] = useState(false)
   const [scrapeStatus, setScrapeStatus] = useState(null)
   const [showScrapeModal, setShowScrapeModal] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarding_done'))
   const pollRef = useRef(null)
 
   // Chart colors based on theme
   const chartColor = dark ? '#60a5fa' : '#2563eb'
   const gridColor = dark ? '#334155' : '#f1f5f9'
   const tickColor = dark ? '#94a3b8' : '#64748b'
+
+  // Distinct colors per portal — vibrant in light, softer in dark
+  const portalColors = {
+    linkedin: dark ? '#60a5fa' : '#0a66c2',
+    naukri:   dark ? '#38bdf8' : '#0284c7',
+    indeed:   dark ? '#a78bfa' : '#7c3aed',
+    glassdoor: dark ? '#4ade80' : '#16a34a',
+    google:   dark ? '#fb923c' : '#ea580c',
+  }
+  const getPortalColor = (portal) => portalColors[portal] || chartColor
 
   useEffect(() => {
     if (scraping) {
@@ -98,6 +110,7 @@ export default function Dashboard() {
       </div>
 
       {showScrapeModal && <ScrapeModal onScrape={handleScrape} onClose={() => setShowScrapeModal(false)} />}
+      {showOnboarding && <OnboardingModal onClose={() => { setShowOnboarding(false); localStorage.setItem('onboarding_done', '1') }} />}
 
       {/* Live Scrape Monitor */}
       {scraping && scrapeStatus && (
@@ -222,7 +235,11 @@ export default function Dashboard() {
                     <XAxis type="number" tick={{ fontSize: 10, fill: tickColor }} />
                     <YAxis dataKey="portal" type="category" tick={{ fontSize: 10, fill: tickColor }} width={80} tickFormatter={capitalize} />
                     <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, background: dark ? '#1e293b' : '#fff', border: `1px solid ${dark ? '#334155' : '#e2e8f0'}`, color: dark ? '#e2e8f0' : '#1e293b' }} />
-                    <Bar dataKey="total_jobs" fill={chartColor} radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="total_jobs" radius={[0, 4, 4, 0]}>
+                      {(portals.portals || []).map((entry, i) => (
+                        <Cell key={i} fill={getPortalColor(entry.portal)} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

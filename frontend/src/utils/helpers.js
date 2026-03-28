@@ -44,11 +44,10 @@ export function statusColor(status) {
 /** Portal display info */
 const PORTALS = {
   linkedin: { label: 'LinkedIn', color: 'text-blue-600 dark:text-blue-400' },
-  naukri: { label: 'Naukri', color: 'text-blue-500 dark:text-blue-400' },
-  wellfound: { label: 'Wellfound', color: 'text-orange-500 dark:text-orange-400' },
-  instahyre: { label: 'Instahyre', color: 'text-teal-600 dark:text-teal-400' },
+  naukri: { label: 'Naukri', color: 'text-sky-500 dark:text-sky-400' },
   indeed: { label: 'Indeed', color: 'text-purple-600 dark:text-purple-400' },
   glassdoor: { label: 'Glassdoor', color: 'text-green-600 dark:text-green-400' },
+  google: { label: 'Google', color: 'text-orange-500 dark:text-orange-400' },
 }
 
 /** Get portal display label */
