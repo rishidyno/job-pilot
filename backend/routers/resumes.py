@@ -65,7 +65,10 @@ async def _compile_latex(latex_source: str) -> bytes:
 async def get_latex(user_id: str = Depends(get_current_user_id)):
     """Get the user's base LaTeX resume source."""
     resumes_col = get_collection("resumes")
-    resume = await resumes_col.find_one({"user_id": user_id, "is_base": True})
+    # Prefer the one with latex_source
+    resume = await resumes_col.find_one({"user_id": user_id, "is_base": True, "latex_source": {"$exists": True, "$ne": ""}})
+    if not resume:
+        resume = await resumes_col.find_one({"user_id": user_id, "is_base": True})
     return {"content": resume.get("latex_source", "") if resume else ""}
 
 
@@ -73,11 +76,16 @@ async def get_latex(user_id: str = Depends(get_current_user_id)):
 async def update_latex(data: LatexContent, user_id: str = Depends(get_current_user_id)):
     """Update the user's base LaTeX resume source."""
     resumes_col = get_collection("resumes")
-    await resumes_col.update_one(
-        {"user_id": user_id, "is_base": True},
-        {"$set": {"latex_source": data.content, "updated_at": utc_now()}},
-        upsert=True,
-    )
+    # Find existing base with latex, or any base, or create new
+    existing = await resumes_col.find_one({"user_id": user_id, "is_base": True, "latex_source": {"$exists": True}})
+    if existing:
+        await resumes_col.update_one({"_id": existing["_id"]}, {"$set": {"latex_source": data.content, "updated_at": utc_now()}})
+    else:
+        await resumes_col.update_one(
+            {"user_id": user_id, "is_base": True},
+            {"$set": {"latex_source": data.content, "is_base": True, "updated_at": utc_now()}},
+            upsert=True,
+        )
     return {"success": True}
 
 
@@ -208,7 +216,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
 
 @router.get("/compile/{resume_id}")
 async def compile_resume(resume_id: str, token: Optional[str] = None):
-    """Serve a resume as PDF — either from file (base) or compiled LaTeX (tailored)."""
+    """Compile LaTeX to PDF and serve. Falls back to uploaded PDF file."""
     from services.auth_service import decode_token
     if not token:
         raise HTTPException(status_code=401, detail="Token required")
@@ -219,26 +227,25 @@ async def compile_resume(resume_id: str, token: Optional[str] = None):
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
-    # Case 1: Base resume with uploaded PDF file
-    file_path = resume.get("file_path_original_style", "")
-    if resume.get("is_base") and file_path and os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            pdf_bytes = f.read()
-        return Response(content=pdf_bytes, media_type="application/pdf",
-                        headers={"Content-Disposition": "inline"})
-
-    # Case 2: Tailored resume with LaTeX source
+    # Primary: compile LaTeX
     latex = resume.get("latex_source", "")
     if latex:
         try:
             pdf_bytes = await _compile_latex(latex)
+            return Response(content=pdf_bytes, media_type="application/pdf",
+                            headers={"Content-Disposition": "inline"})
         except Exception as e:
             logger.error(f"LaTeX compilation failed: {e}")
             raise HTTPException(status_code=500, detail=f"Compilation failed: {str(e)[:200]}")
-        return Response(content=pdf_bytes, media_type="application/pdf",
-                        headers={"Content-Disposition": "inline"})
 
-    raise HTTPException(status_code=400, detail="No PDF file or LaTeX source available")
+    # Fallback: serve uploaded PDF file
+    file_path = resume.get("file_path_original_style", "")
+    if file_path and os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            return Response(content=f.read(), media_type="application/pdf",
+                            headers={"Content-Disposition": "inline"})
+
+    raise HTTPException(status_code=400, detail="No LaTeX source or PDF file found. Edit your resume in the LaTeX editor first.")
 
 
 @router.post("/cover-letter")
