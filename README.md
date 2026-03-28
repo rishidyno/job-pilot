@@ -1,103 +1,180 @@
-# 🚀 JobPilot — AI-Powered Automated Job Application Engine
+<div align="center">
 
-> A self-hosted, intelligent job hunting tool that scrapes jobs from multiple portals, tailors your resume & cover letter using Claude AI, tracks every application in MongoDB, and auto-applies — all from a beautiful dashboard.
+# 🚀 JobPilot
+
+**Your AI-powered job hunting copilot.**
+
+Scrape jobs from LinkedIn, Indeed, Glassdoor & more — tailor your resume with AI — track every application — all from one dashboard.
+
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://mongodb.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+[Getting Started](#getting-started) · [Features](#features) · [Screenshots](#screenshots) · [Tech Stack](#tech-stack) · [Contributing](#contributing)
+
+</div>
 
 ---
 
-## 📋 Table of Contents
+## Why JobPilot?
 
-- [Architecture Overview](#architecture-overview)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Setup & Installation](#setup--installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [API Documentation](#api-documentation)
-- [Extending JobPilot](#extending-jobpilot)
-- [Flow Diagrams](#flow-diagrams)
+Job hunting is broken. You spend hours on 6 different portals, manually tailoring resumes, losing track of applications, and missing great opportunities.
+
+JobPilot fixes this:
+
+- **One scrape** pulls jobs from LinkedIn, Indeed, Glassdoor, Google Jobs, and Naukri — no portal accounts needed
+- **AI scores** every job against your profile automatically
+- **One click** tailors your LaTeX resume for any job description
+- **One dashboard** tracks everything from scrape to offer
+
+Self-hosted. Your data stays yours.
 
 ---
 
-## Architecture Overview
+## Features
 
+### 🔍 Multi-Portal Job Scraping
+Powered by [python-jobspy](https://github.com/speedyapply/JobSpy). No login credentials required — uses public APIs.
+
+| Portal | Status | Notes |
+|--------|--------|-------|
+| LinkedIn | ✅ | Guest API, no login |
+| Indeed | ✅ | Supports 40+ countries |
+| Glassdoor | ✅ | Reviews + salary data |
+| Google Jobs | ✅ | Aggregated results |
+| Naukri | ✅ | India-focused, skills + experience |
+
+- Smart keyword expansion (e.g., "Backend Engineer" also searches "Java Developer", "SDE")
+- 30-day lookback, 30 results per keyword per portal
+- Live scrape monitor with real-time logs
+- Configurable scrape scheduling from the UI
+
+### 📄 AI Resume Tailoring
+- Write your resume once in LaTeX
+- AI rewrites it for each job description — keeping it truthful
+- Editable rules (rules.md) control what the AI can and can't change
+- Live PDF preview compiled from LaTeX
+- Score updates automatically after tailoring
+
+### 📊 Smart Job Matching
+- Quick heuristic scoring on every scraped job (skills overlap, location, title relevance)
+- AI-powered deep scoring on demand
+- Skill match highlighting — see which of YOUR skills match each job
+- Score labels: Excellent / Strong / Good / Fair / Weak
+
+### 📋 Application Tracking
+- **Kanban board** — drag and drop between Pending → Applied → Interview → Offered → Rejected
+- **List view** — expandable cards with timeline, status actions, notes
+- **Board/List toggle** — switch views instantly
+
+### 🎯 Job Management
+- **Bookmarks** — star jobs to save for later, filter by saved
+- **Notes** — add personal context to any job
+- **Job comparison** — select 2-3 jobs, compare side-by-side
+- **Export CSV** — download all jobs for offline analysis
+- **Bulk filters** — by status, portal, score, search text
+
+### 📈 Dashboard & Insights
+- Key metrics: total jobs, new today, high matches, applied, interviews
+- Jobs-over-time chart
+- Per-portal breakdown with distinct colors
+- Application pipeline visualization
+- Most demanded skills (aggregated from all scraped jobs)
+- Salary data table
+
+### ⚙️ Settings & Configuration
+- **Profile** — name, email, current role, experience
+- **Job preferences** — target roles, locations, skills, experience range (all user-controlled, no .env editing)
+- **AI Rules** — markdown editor with live preview for resume generation rules
+- **Candidate Profile** — markdown editor for your actual experience/skills
+- **Scheduler** — configure scrape interval from the UI
+- **Portal status** — see which portals are connected
+
+### 🎨 UI/UX
+- **Dark mode** — full dark theme support
+- **Responsive** — works on desktop and mobile
+- **Keyboard shortcuts** — `g+j` for Jobs, `/` for search, `?` for help
+- **Onboarding** — 4-step walkthrough for new users
+- **Toast notifications** — replaces all alert() calls
+- **Skeleton loading** — smooth loading states everywhere
+- **Focus trapping** — accessible modals
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Python 3.11+**
+- **Node.js 18+**
+- **MongoDB** (Atlas free tier works great)
+- **pdflatex** (for LaTeX → PDF compilation)
+
+### 1. Clone & Configure
+
+```bash
+git clone https://github.com/rishidyno/job-pilot.git
+cd job-pilot
+cp .env.example .env
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     JOBPILOT ARCHITECTURE                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐   │
-│  │   React +     │    │   FastAPI     │    │   MongoDB        │   │
-│  │   Vite +      │◄──►│   Backend     │◄──►│   Database       │   │
-│  │   Tailwind    │    │   (REST API)  │    │   (jobs, apps,   │   │
-│  │   Dashboard   │    │              │    │    resumes)       │   │
-│  └──────────────┘    └──────┬───────┘    └──────────────────┘   │
-│                              │                                    │
-│           ┌──────────────────┼──────────────────┐                │
-│           │                  │                  │                │
-│  ┌────────▼──────┐  ┌───────▼───────┐  ┌──────▼──────────┐    │
-│  │  Job Scrapers  │  │  AI Services  │  │  Auto-Appliers  │    │
-│  │  ─────────────│  │  ────────────│  │  ──────────────│    │
-│  │  • LinkedIn    │  │  • Claude API │  │  • LinkedIn     │    │
-│  │  • Naukri      │  │  • Resume     │  │  • Naukri       │    │
-│  │  • Wellfound   │  │    Tailoring  │  │  • Wellfound    │    │
-│  │  • Instahyre   │  │  • Cover      │  │  • Instahyre    │    │
-│  │  • Indeed      │  │    Letters    │  │  • Indeed        │    │
-│  │  • Glassdoor   │  │  • Job Match  │  │  • Glassdoor     │    │
-│  │  • Extensible  │  │    Scoring    │  │  • Extensible    │    │
-│  └───────────────┘  └──────────────┘  └────────────────┘    │
-│           │                                     │                │
-│  ┌────────▼─────────────────────────────────────▼───────────┐   │
-│  │              Playwright Browser Automation                │   │
-│  │              (Headless Chrome for form-filling)           │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                              │                                    │
-│  ┌───────────────────────────▼──────────────────────────────┐   │
-│  │              Background Scheduler (APScheduler)           │   │
-│  │  • Periodic job scraping    • Auto-apply queue            │   │
-│  │  • Match scoring updates    • Telegram notifications      │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
+
+Edit `.env` with your MongoDB URI and JWT secret:
+
+```bash
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/?appName=Cluster0
+MONGODB_DB_NAME=jobpilot
+JWT_SECRET_KEY=your-secret-key-here
+```
+
+> **Note:** Job portal credentials are NOT required. Scraping uses public APIs. All job preferences are configured from the UI after registration.
+
+### 2. Backend
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 4. Open
+
+- **Dashboard:** http://localhost:5173
+- **API Docs:** http://localhost:8000/docs
+
+### Docker (Alternative)
+
+```bash
+docker-compose up --build
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer           | Technology                              | Why                                      |
-|-----------------|----------------------------------------|------------------------------------------|
-| **Backend**     | Python 3.11+ / FastAPI                 | Best ecosystem for scraping + AI + PDF   |
-| **Frontend**    | React 18 / Vite / Tailwind CSS         | Fast, modern, great for dashboards       |
-| **Database**    | MongoDB (via Motor async driver)       | Flexible schema for varied job data      |
-| **AI Engine**   | Anthropic Claude API (claude-sonnet-4-20250514) | Resume tailoring + cover letters     |
-| **Scraping**    | Playwright + BeautifulSoup             | Reliable browser automation + parsing    |
-| **PDF Gen**     | WeasyPrint + Jinja2 templates          | Professional PDF resume output           |
-| **Scheduler**   | APScheduler                            | Background job scraping & auto-apply     |
-| **Notifications** | python-telegram-bot                  | Real-time Telegram alerts                |
-
----
-
-## Features
-
-### Core Features
-- ✅ **Multi-portal job scraping** — LinkedIn, Naukri, Wellfound, Instahyre, Indeed, Glassdoor
-- ✅ **AI-powered resume tailoring** — Claude generates two versions (original format + clean template)
-- ✅ **Cover letter generation** — Tailored per job description
-- ✅ **Smart job matching** — AI scores each job against your profile (0-100)
-- ✅ **Dual-mode auto-apply** — Full-auto or semi-auto (review before applying)
-- ✅ **Application tracking** — Every application tracked with status pipeline
-- ✅ **Dashboard** — Beautiful React UI showing all jobs, stats, and application status
-- ✅ **Telegram bot** — Instant notifications for high-match jobs
-
-### Technical Features
-- ✅ Modular scraper architecture — add new portals by extending `BaseScraper`
-- ✅ Modular applier architecture — add new auto-appliers by extending `BaseApplier`
-- ✅ Background scheduler for periodic scraping
-- ✅ Deduplication — same job from multiple portals won't create duplicates
-- ✅ Rate limiting & anti-detection for scraping
-- ✅ Comprehensive API with auto-generated OpenAPI docs
-- ✅ Base resume always preserved — tailored versions are derivatives
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| **Frontend** | React 18, Vite, Tailwind CSS | Fast builds, utility-first styling |
+| **Backend** | Python, FastAPI | Async, auto-docs, great ecosystem |
+| **Database** | MongoDB (Motor async driver) | Flexible schema for varied job data |
+| **Scraping** | python-jobspy | Multi-portal, no login, battle-tested |
+| **AI** | Kiro CLI (Claude) | Resume tailoring, no API key needed |
+| **PDF** | pdflatex | Professional LaTeX resume compilation |
+| **Auth** | JWT + bcrypt | Stateless, secure |
+| **Charts** | Recharts | Composable React charts |
+| **Icons** | Lucide React | Consistent, tree-shakeable |
+| **Scheduler** | APScheduler | Background periodic scraping |
 
 ---
 
@@ -105,253 +182,97 @@
 
 ```
 job-pilot/
-├── README.md                          # You are here
-├── docker-compose.yml                 # MongoDB + app containers
-├── .env.example                       # Environment variables template
-├── Makefile                           # Common commands
-│
-├── backend/                           # ═══ PYTHON FASTAPI BACKEND ═══
-│   ├── README.md                      # Backend-specific docs
-│   ├── requirements.txt               # Python dependencies
-│   ├── main.py                        # FastAPI app entry point & lifespan
-│   ├── config.py                      # Centralized config from env vars
-│   ├── database.py                    # MongoDB connection (async Motor)
-│   │
-│   ├── models/                        # ── Pydantic models (data shapes) ──
-│   │   ├── __init__.py
-│   │   ├── job.py                     # Job listing schema
-│   │   ├── application.py             # Application tracking schema
-│   │   ├── resume.py                  # Resume & cover letter schema
-│   │   └── user_profile.py            # Your profile/preferences
-│   │
-│   ├── routers/                       # ── API route handlers ──
-│   │   ├── __init__.py
-│   │   ├── jobs.py                    # /api/jobs/* endpoints
-│   │   ├── applications.py            # /api/applications/* endpoints
-│   │   ├── resumes.py                 # /api/resumes/* endpoints
-│   │   ├── dashboard.py               # /api/dashboard/* (stats/analytics)
-│   │   └── settings.py                # /api/settings/* endpoints
-│   │
-│   ├── services/                      # ── Business logic layer ──
-│   │   ├── __init__.py
-│   │   ├── ai_service.py             # Claude API client wrapper
-│   │   ├── resume_tailor.py          # Resume tailoring with AI
-│   │   ├── cover_letter_service.py   # Cover letter generation
-│   │   ├── job_matcher.py            # Job-profile match scoring
-│   │   ├── telegram_service.py       # Telegram bot notifications
-│   │   └── pdf_generator.py          # PDF resume/cover letter gen
-│   │
-│   ├── scrapers/                      # ── Job portal scrapers ──
-│   │   ├── __init__.py
-│   │   ├── base_scraper.py           # Abstract base class (extend this!)
-│   │   ├── linkedin_scraper.py       # LinkedIn Jobs scraper
-│   │   ├── naukri_scraper.py         # Naukri.com scraper
-│   │   ├── wellfound_scraper.py      # Wellfound (AngelList) scraper
-│   │   ├── instahyre_scraper.py      # Instahyre scraper
-│   │   ├── indeed_scraper.py         # Indeed scraper
-│   │   ├── glassdoor_scraper.py      # Glassdoor scraper
-│   │   └── scraper_manager.py        # Orchestrator for all scrapers
-│   │
-│   ├── appliers/                      # ── Auto-apply modules ──
-│   │   ├── __init__.py
-│   │   ├── base_applier.py           # Abstract base class (extend this!)
-│   │   ├── linkedin_applier.py       # LinkedIn Easy Apply automation
-│   │   ├── naukri_applier.py         # Naukri apply automation
-│   │   ├── wellfound_applier.py      # Wellfound apply automation
-│   │   ├── instahyre_applier.py      # Instahyre apply automation
-│   │   └── applier_manager.py        # Orchestrator for all appliers
-│   │
-│   ├── schedulers/                    # ── Background tasks ──
-│   │   ├── __init__.py
-│   │   └── job_scheduler.py          # APScheduler setup & task definitions
-│   │
-│   ├── templates/                     # ── Jinja2 HTML templates ──
-│   │   ├── resume_original.html      # Resume template matching your style
-│   │   └── resume_clean.html         # Clean professional template
-│   │
-│   └── utils/                         # ── Shared utilities ──
-│       ├── __init__.py
-│       ├── logger.py                  # Structured logging setup
-│       └── helpers.py                 # Common helper functions
-│
-├── frontend/                          # ═══ REACT + VITE FRONTEND ═══
-│   ├── README.md                      # Frontend-specific docs
-│   ├── package.json                   # Node dependencies
-│   ├── vite.config.js                 # Vite configuration
-│   ├── tailwind.config.js             # Tailwind CSS config
-│   ├── postcss.config.js              # PostCSS config
-│   ├── index.html                     # HTML entry point
-│   └── src/
-│       ├── main.jsx                   # React entry point
-│       ├── App.jsx                    # Root component with routing
-│       ├── api/
-│       │   └── client.js             # Axios API client
-│       ├── components/                # Reusable UI components
-│       │   ├── Layout.jsx            # App shell (sidebar + content)
-│       │   ├── Sidebar.jsx           # Navigation sidebar
-│       │   ├── JobCard.jsx           # Job listing card
-│       │   ├── StatusBadge.jsx       # Application status pill
-│       │   ├── StatsCard.jsx         # Dashboard metric card
-│       │   ├── MatchScore.jsx        # Visual match score indicator
-│       │   └── EmptyState.jsx        # Empty state placeholder
-│       ├── pages/                     # Page-level components
-│       │   ├── Dashboard.jsx         # Overview with stats & charts
-│       │   ├── Jobs.jsx              # Job listings browser
-│       │   ├── Applications.jsx      # Application tracker pipeline
-│       │   ├── ResumeManager.jsx     # Resume versions manager
-│       │   └── Settings.jsx          # App configuration
-│       ├── hooks/
-│       │   └── useApi.js             # Custom hook for API calls
-│       └── utils/
-│           └── helpers.js            # Frontend utility functions
-│
-├── data/                              # ═══ LOCAL DATA STORAGE ═══
-│   ├── resumes/                       # Base + tailored resume PDFs
-│   └── cover_letters/                 # Generated cover letter PDFs
-│
-└── docs/                              # ═══ DOCUMENTATION ═══
-    ├── ARCHITECTURE.md                # Detailed architecture deep-dive
-    ├── API_DOCS.md                    # Full API reference
-    ├── FLOW_DIAGRAMS.md               # User flows & data flows
-    ├── SCRAPER_GUIDE.md               # How to add new scrapers
-    └── EXTENDING.md                   # How to extend JobPilot
+├── backend/
+│   ├── main.py                 # FastAPI app entry point
+│   ├── config.py               # Environment config
+│   ├── database.py             # MongoDB connection
+│   ├── models/                 # Pydantic schemas
+│   ├── routers/                # API endpoints
+│   │   ├── auth.py             # Register, login, JWT
+│   │   ├── jobs.py             # CRUD, scrape, score, export
+│   │   ├── applications.py     # Application tracking
+│   │   ├── resumes.py          # LaTeX editor, compile, tailor
+│   │   ├── dashboard.py        # Stats, charts, insights
+│   │   └── settings.py         # Profile, preferences, rules
+│   ├── services/
+│   │   ├── ai_service.py       # Kiro CLI integration
+│   │   ├── resume_tailor.py    # AI resume tailoring
+│   │   ├── job_matcher.py      # Scoring algorithm
+│   │   └── user_prefs.py       # User preferences from DB
+│   ├── scrapers/
+│   │   └── scraper_manager.py  # python-jobspy wrapper
+│   └── schedulers/
+│       └── job_scheduler.py    # APScheduler setup
+├── frontend/
+│   ├── src/
+│   │   ├── pages/              # Dashboard, Jobs, Applications, Resumes, Settings, Login
+│   │   ├── components/         # JobCard, KanbanBoard, MarkdownEditor, PdfViewer, etc.
+│   │   ├── hooks/              # useAuth, useApi, useToast, useTheme, useKeyboardShortcuts
+│   │   └── api/client.js       # Axios API client
+│   └── tailwind.config.js
+├── data/
+│   ├── rules.md                # AI generation rules (editable from UI)
+│   └── profile.md              # Candidate profile (editable from UI)
+└── docker-compose.yml
 ```
 
 ---
 
-## Setup & Installation
+## Keyboard Shortcuts
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- MongoDB 6+ (or use Docker)
-- Chrome/Chromium (for Playwright)
-- Anthropic API key
-
-### Quick Start
-
-```bash
-# 1. Clone the repository
-git clone <your-repo-url> job-pilot
-cd job-pilot
-
-# 2. Copy and edit environment variables
-cp .env.example .env
-# Edit .env with your API keys (see Configuration section)
-
-# 3. Start MongoDB (via Docker)
-docker-compose up -d mongodb
-
-# 4. Install backend dependencies
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-playwright install chromium
-
-# 5. Install frontend dependencies
-cd ../frontend
-npm install
-
-# 6. Copy your base resume
-cp /path/to/your/resume.pdf ../data/resumes/base_resume.pdf
-
-# 7. Start the backend
-cd ../backend
-uvicorn main:app --reload --port 8000
-
-# 8. Start the frontend (new terminal)
-cd ../frontend
-npm run dev
-```
-
-Open **http://localhost:5173** for the dashboard.  
-API docs at **http://localhost:8000/docs** (Swagger UI).
-
-### Docker Start (Alternative)
-
-```bash
-cp .env.example .env
-# Edit .env with your keys
-docker-compose up --build
-```
+| Shortcut | Action |
+|----------|--------|
+| `g` then `d` | Go to Dashboard |
+| `g` then `j` | Go to Jobs |
+| `g` then `a` | Go to Applications |
+| `g` then `r` | Go to Resumes |
+| `g` then `s` | Go to Settings |
+| `/` | Focus search bar |
+| `?` | Show shortcuts help |
+| `Esc` | Close modal |
 
 ---
 
-## Configuration
+## API Overview
 
-All configuration is via environment variables (`.env` file):
+Full interactive docs at `http://localhost:8000/docs` (Swagger UI).
 
-```bash
-# ═══ REQUIRED ═══
-ANTHROPIC_API_KEY=sk-ant-...          # Your Claude API key
-MONGODB_URI=mongodb://localhost:27017  # MongoDB connection string
-MONGODB_DB_NAME=jobpilot               # Database name
-
-# ═══ JOB SEARCH PREFERENCES ═══
-TARGET_ROLE=Backend Engineer,Full Stack Developer,SDE-1,SDE-2,Software Engineer
-TARGET_EXPERIENCE_MIN=1.5
-TARGET_EXPERIENCE_MAX=2.5
-TARGET_LOCATIONS=Bengaluru,Remote,Hyderabad,Noida,Gurgaon
-
-# ═══ TELEGRAM (optional) ═══
-TELEGRAM_BOT_TOKEN=                    # From @BotFather
-TELEGRAM_CHAT_ID=                      # Your chat ID
-
-# ═══ JOB PORTAL CREDENTIALS ═══
-LINKEDIN_EMAIL=
-LINKEDIN_PASSWORD=
-NAUKRI_EMAIL=
-NAUKRI_PASSWORD=
-WELLFOUND_EMAIL=
-WELLFOUND_PASSWORD=
-INSTAHYRE_EMAIL=
-INSTAHYRE_PASSWORD=
-
-# ═══ SCHEDULER ═══
-SCRAPE_INTERVAL_HOURS=6                # How often to scrape
-AUTO_APPLY_ENABLED=false               # Master switch for auto-apply
-AUTO_APPLY_MODE=semi                   # "auto" or "semi"
-MIN_MATCH_SCORE_TO_APPLY=70            # Only apply if match >= this
-
-# ═══ ADVANCED ═══
-LOG_LEVEL=INFO
-PLAYWRIGHT_HEADLESS=true               # Set false to see browser
-```
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/register` | POST | Create account |
+| `/api/auth/login` | POST | Get JWT token |
+| `/api/jobs` | GET | List jobs (filters, pagination) |
+| `/api/jobs/scrape` | POST | Trigger scrape |
+| `/api/jobs/scrape/status` | GET | Live scrape status |
+| `/api/jobs/export` | GET | Download CSV |
+| `/api/resumes/latex` | GET/PUT | Read/write LaTeX source |
+| `/api/resumes/compile/:id` | GET | Compile LaTeX → PDF |
+| `/api/resumes/tailor` | POST | AI-tailor resume for a job |
+| `/api/dashboard/stats` | GET | Dashboard metrics |
+| `/api/dashboard/salary-insights` | GET | Skill demand + salary data |
+| `/api/settings/profile` | GET/PUT | User preferences |
+| `/api/settings/rules` | GET/PUT | AI rules (markdown) |
 
 ---
 
-## API Documentation
+## Contributing
 
-Interactive API docs available at `http://localhost:8000/docs` when running.
-
-See [docs/API_DOCS.md](docs/API_DOCS.md) for the complete API reference.
-
----
-
-## Flow Diagrams
-
-See [docs/FLOW_DIAGRAMS.md](docs/FLOW_DIAGRAMS.md) for detailed user & data flows.
-
----
-
-## Extending JobPilot
-
-### Adding a New Job Portal Scraper
-See [docs/SCRAPER_GUIDE.md](docs/SCRAPER_GUIDE.md) — just extend `BaseScraper`!
-
-### Adding a New Auto-Applier
-Same pattern — extend `BaseApplier` in `backend/appliers/`.
-
-### Full Extension Guide
-See [docs/EXTENDING.md](docs/EXTENDING.md).
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feat/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## License
 
-Personal project — not for redistribution.
+MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ by Rishi Raj — because job hunting should be automated.**
+<div align="center">
+
+**Built by [Rishi Raj](https://github.com/rishidyno) — because job hunting should be automated.**
+
+</div>
