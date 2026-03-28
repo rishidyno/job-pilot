@@ -178,10 +178,18 @@ export default function Jobs() {
         </div>
         <div className="flex items-center gap-2">
           {compareIds.size >= 2 && (
-            <button onClick={() => setShowCompare(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
-              <GitCompare className="w-4 h-4" /> Compare ({compareIds.size})
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setShowCompare(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
+                <GitCompare className="w-4 h-4" /> Compare {compareIds.size}
+              </button>
+              <button onClick={() => setCompareIds(new Set())}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-surface-300 hover:bg-gray-100 dark:hover:bg-surface-700 rounded-lg"
+                aria-label="Clear comparison selection">✕</button>
+            </div>
+          )}
+          {compareIds.size === 1 && (
+            <span className="text-xs text-indigo-500 dark:text-indigo-400 px-3 py-2">Select 1 more to compare</span>
           )}
           <a href={api.jobs.exportCsv()} download
             className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300"
@@ -274,19 +282,16 @@ export default function Jobs() {
       ) : (
         <div className="space-y-3 sm:space-y-4">
           {jobs.map(job => (
-            <div key={job._id} className="relative">
-              <label className="absolute top-3 left-3 z-10 flex items-center gap-1.5 cursor-pointer" onClick={e => e.stopPropagation()}>
-                <input type="checkbox" checked={compareIds.has(job._id)}
-                  onChange={() => setCompareIds(prev => {
-                    const next = new Set(prev)
-                    next.has(job._id) ? next.delete(job._id) : next.size < 3 ? next.add(job._id) : null
-                    return next
-                  })}
-                  className="w-3.5 h-3.5 rounded border-gray-300 dark:border-surface-600 text-indigo-600 focus:ring-indigo-500" />
-                {compareIds.has(job._id) && <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Compare</span>}
-              </label>
-              <JobCard job={job} onApply={handleApply} onScore={handleScore} onTailor={handleTailor} onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote} />
-            </div>
+            <JobCard key={job._id} job={job}
+              onApply={handleApply} onScore={handleScore} onTailor={handleTailor}
+              onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote}
+              onCompare={(id) => setCompareIds(prev => {
+                const next = new Set(prev)
+                next.has(id) ? next.delete(id) : next.size < 3 ? next.add(id) : null
+                return next
+              })}
+              isComparing={compareIds.has(job._id)}
+            />
           ))}
         </div>
       )}

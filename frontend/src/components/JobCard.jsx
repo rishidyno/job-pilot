@@ -13,7 +13,7 @@ import api from '../api/client'
 import { portalLabel, portalColor, truncate, timeAgo } from '../utils/helpers'
 import { useState } from 'react'
 
-export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote }) {
+export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote, onCompare, isComparing }) {
   const [tailoring, setTailoring] = useState(false)
   const [scoring, setScoring] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
@@ -33,7 +33,9 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
 
   return (
     <>
-      <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-5 hover:shadow-md dark:hover:shadow-surface-900/50 transition-shadow cursor-pointer"
+      <div className={`bg-white dark:bg-surface-800 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-surface-900/50 transition-all cursor-pointer ${
+          isComparing ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-surface-700'
+        }`}
         onClick={() => setShowDetail(true)} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') setShowDetail(true) }}
         aria-label={`${job.title} at ${job.company}, score ${job.match_score ?? 'unscored'}`}>
@@ -137,6 +139,18 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
                 className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                 aria-label="Delete this job">
                 <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+            {onCompare && (
+              <button onClick={() => onCompare(job._id)}
+                className={`text-xs px-2 sm:px-2.5 py-1 rounded-md ${
+                  isComparing
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                }`}
+                aria-label={isComparing ? 'Remove from comparison' : 'Add to comparison'}
+                aria-pressed={isComparing}>
+                {isComparing ? '✓ Compare' : '⇔ Compare'}
               </button>
             )}
           </div>
