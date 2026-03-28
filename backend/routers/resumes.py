@@ -208,7 +208,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
 
 @router.get("/compile/{resume_id}")
 async def compile_resume(resume_id: str, token: Optional[str] = None):
-    """Compile a resume's LaTeX to PDF and serve it."""
+    """Serve a resume as PDF — either from file (base) or compiled LaTeX (tailored)."""
     from services.auth_service import decode_token
     if not token:
         raise HTTPException(status_code=401, detail="Token required")
@@ -219,18 +219,26 @@ async def compile_resume(resume_id: str, token: Optional[str] = None):
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
+    # Case 1: Base resume with uploaded PDF file
+    file_path = resume.get("file_path_original_style", "")
+    if resume.get("is_base") and file_path and os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            pdf_bytes = f.read()
+        return Response(content=pdf_bytes, media_type="application/pdf",
+                        headers={"Content-Disposition": "inline"})
+
+    # Case 2: Tailored resume with LaTeX source
     latex = resume.get("latex_source", "")
-    if not latex:
-        raise HTTPException(status_code=400, detail="No LaTeX source")
+    if latex:
+        try:
+            pdf_bytes = await _compile_latex(latex)
+        except Exception as e:
+            logger.error(f"LaTeX compilation failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Compilation failed: {str(e)[:200]}")
+        return Response(content=pdf_bytes, media_type="application/pdf",
+                        headers={"Content-Disposition": "inline"})
 
-    try:
-        pdf_bytes = await _compile_latex(latex)
-    except Exception as e:
-        logger.error(f"LaTeX compilation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Compilation failed: {str(e)[:200]}")
-
-    return Response(content=pdf_bytes, media_type="application/pdf",
-                    headers={"Content-Disposition": "inline"})
+    raise HTTPException(status_code=400, detail="No PDF file or LaTeX source available")
 
 
 @router.post("/cover-letter")
