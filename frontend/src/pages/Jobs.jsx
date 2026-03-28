@@ -79,6 +79,9 @@ export default function Jobs() {
     [statusFilter, portalFilter, bookmarkFilter, minScore, debouncedSearch, sortBy, page]
   )
 
+  const { data: profileData } = useApi(() => api.settings.getProfile(), [])
+  const userSkills = profileData?.primary_skills || []
+
   const { execute } = useApiMutation()
 
   const handleApply = async (jobId) => {
@@ -291,6 +294,7 @@ export default function Jobs() {
                 return next
               })}
               isComparing={compareIds.has(job._id)}
+              userSkills={userSkills}
             />
           ))}
         </div>

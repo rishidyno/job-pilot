@@ -1,35 +1,50 @@
 /**
- * JOBPILOT — JobCard Component
- * Dark mode, job detail modal on click, confirm dialog for delete.
+ * JOBPILOT — JobCard Component (redesigned)
+ * Information-dense, scannable, with skill matching and freshness indicators.
  */
 
-import { MapPin, ExternalLink, Star, Clock, Trash2, FileText, Eye, Bookmark } from 'lucide-react'
-import StatusBadge from './StatusBadge'
+import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight } from 'lucide-react'
 import MatchScore from './MatchScore'
 import PdfViewer from './PdfViewer'
 import JobDetailModal from './JobDetailModal'
 import ConfirmDialog from './ConfirmDialog'
 import api from '../api/client'
-import { portalLabel, portalColor, truncate, timeAgo } from '../utils/helpers'
+import { portalLabel, portalColor, scoreLabel, scoreColor, freshness, truncate } from '../utils/helpers'
 import { useState } from 'react'
 
-export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote, onCompare, isComparing }) {
+function CompanyAvatar({ name }) {
+  const colors = ['bg-brand-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500']
+  const idx = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % colors.length
+  return (
+    <div className={`w-10 h-10 rounded-lg ${colors[idx]} flex items-center justify-center shrink-0`}>
+      <span className="text-white text-sm font-bold">{(name || '?')[0].toUpperCase()}</span>
+    </div>
+  )
+}
+
+function SkillTag({ skill, matched }) {
+  if (matched) return (
+    <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-xs rounded border border-emerald-200 dark:border-emerald-800">✓ {skill}</span>
+  )
+  return (
+    <span className="px-1.5 py-0.5 bg-gray-50 dark:bg-surface-700 text-gray-500 dark:text-surface-400 text-xs rounded border border-gray-200 dark:border-surface-600">{skill}</span>
+  )
+}
+
+export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote, onCompare, isComparing, userSkills = [] }) {
   const [tailoring, setTailoring] = useState(false)
   const [scoring, setScoring] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const handleTailor = async (e) => {
-    e?.stopPropagation()
-    setTailoring(true)
-    try { await onTailor(job._id) } finally { setTailoring(false) }
-  }
-  const handleScore = async (e) => {
-    e?.stopPropagation()
-    setScoring(true)
-    try { await onScore(job._id) } finally { setScoring(false) }
-  }
+  const handleTailor = async (e) => { e?.stopPropagation(); setTailoring(true); try { await onTailor(job._id) } finally { setTailoring(false) } }
+  const handleScore = async (e) => { e?.stopPropagation(); setScoring(true); try { await onScore(job._id) } finally { setScoring(false) } }
+
+  const fresh = freshness(job.date_posted || job.created_at)
+  const userSkillsLower = new Set((userSkills || []).map(s => s.toLowerCase()))
+  const label = scoreLabel(job.match_score)
+  const isApplied = ['applied', 'interviewing', 'offered', 'accepted'].includes(job.status)
 
   return (
     <>
@@ -38,119 +53,110 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
         }`}
         onClick={() => setShowDetail(true)} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') setShowDetail(true) }}
-        aria-label={`${job.title} at ${job.company}, score ${job.match_score ?? 'unscored'}`}>
-        {/* Header */}
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="hidden sm:block"><MatchScore score={job.match_score} /></div>
+        aria-label={`${job.title} at ${job.company}`}>
+
+        {/* Row 1: Avatar + Title + Meta + Bookmark */}
+        <div className="flex items-start gap-3">
+          <CompanyAvatar name={job.company} />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="sm:hidden text-xs font-bold text-brand-600 dark:text-brand-400">{job.match_score ?? '?'}</span>
+            <div className="flex items-center gap-2 mb-0.5">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{job.title}</h3>
-              <span className={`text-xs font-semibold ${portalColor(job.portal)}`} title={portalLabel(job.portal)}>
-                {portalLabel(job.portal)}
-              </span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-surface-300 font-medium">{job.company}</p>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 dark:text-surface-500 flex-wrap">
-              {job.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location}</span>}
-              {job.experience_required && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.experience_required}</span>}
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-surface-400 flex-wrap">
+              <span className="font-medium text-gray-700 dark:text-surface-300">{job.company}</span>
+              <span>·</span>
+              <span className={portalColor(job.portal)}>{portalLabel(job.portal)}</span>
+              {job.location && <><span>·</span><span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{job.location}</span></>}
+              {job.is_remote && <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400"><Wifi className="w-3 h-3" />Remote</span>}
             </div>
           </div>
-          <StatusBadge status={job.status} />
-          {onBookmark && (
-            <button onClick={e => { e.stopPropagation(); onBookmark(job._id, !job.bookmarked) }}
-              className="p-1 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/30"
-              aria-label={job.bookmarked ? 'Remove bookmark' : 'Bookmark this job'}>
-              <Bookmark className={`w-4 h-4 ${job.bookmarked ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-surface-600'}`} />
-            </button>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+            {fresh.label && <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${fresh.color}`}>{fresh.label}</span>}
+            {onBookmark && (
+              <button onClick={() => onBookmark(job._id, !job.bookmarked)}
+                className="p-1 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                aria-label={job.bookmarked ? 'Remove bookmark' : 'Bookmark'}>
+                <Bookmark className={`w-4 h-4 ${job.bookmarked ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-surface-600 hover:text-amber-300'}`} />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Skills */}
+        {/* Row 2: Salary + Score + Status badges */}
+        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+          {/* Score badge */}
+          {job.match_score != null && (
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${scoreColor(job.match_score)}`}>
+              {job.match_score} · {label}
+            </span>
+          )}
+          {/* Salary */}
+          {job.salary && <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">💰 {job.salary}</span>}
+          {/* Experience */}
+          {job.experience_required && <span className="text-xs text-gray-500 dark:text-surface-400 bg-gray-100 dark:bg-surface-700 px-2 py-0.5 rounded-full">{job.experience_required}</span>}
+          {/* Applied indicator */}
+          {isApplied && <span className="text-xs font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/30 px-2 py-0.5 rounded-full">✓ Applied</span>}
+          {/* Tailored indicator */}
+          {job.tailored_resume_id && !isApplied && <span className="text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/30 px-2 py-0.5 rounded-full">📄 Tailored</span>}
+        </div>
+
+        {/* Row 3: Skills with match highlighting */}
         {job.skills?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {job.skills.slice(0, 6).map((skill, i) => (
-              <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-surface-700 text-gray-600 dark:text-surface-300 text-xs rounded-md">{skill}</span>
+          <div className="flex flex-wrap gap-1 mt-2.5">
+            {job.skills.slice(0, 8).map((skill, i) => (
+              <SkillTag key={i} skill={skill} matched={userSkillsLower.has(skill.toLowerCase())} />
             ))}
-            {job.skills.length > 6 && <span className="text-xs text-gray-400 dark:text-surface-500">+{job.skills.length - 6}</span>}
+            {job.skills.length > 8 && <span className="text-xs text-gray-400 dark:text-surface-500 self-center">+{job.skills.length - 8}</span>}
           </div>
         )}
 
-        {job.description && (
-          <p className="text-xs text-gray-400 dark:text-surface-500 mt-2 line-clamp-2">{truncate(job.description, 200)}</p>
-        )}
-
-        {job.tailored_resume_id && (
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-950/30 rounded-lg"
-            onClick={e => e.stopPropagation()}>
-            <FileText className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-            <span className="text-xs text-green-700 dark:text-green-300 font-medium">Tailored resume ready</span>
-            <button onClick={() => setPdfUrl(api.resumes.compileUrl(job.tailored_resume_id))}
-              className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline ml-auto"
-              aria-label="View tailored resume PDF">
-              <Eye className="w-3 h-3" /> View
-            </button>
-          </div>
-        )}
-
-        {/* Notes preview */}
+        {/* Row 4: Notes */}
         {job.notes && (
-          <div className="mt-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg" onClick={e => e.stopPropagation()}>
+          <div className="mt-2 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/20 rounded-md" onClick={e => e.stopPropagation()}>
             <p className="text-xs text-amber-700 dark:text-amber-300 line-clamp-1">📝 {job.notes}</p>
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 pt-3 border-t border-gray-100 dark:border-surface-700 gap-2 sm:gap-0"
+        {/* Row 5: Actions — clean, minimal */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-surface-700"
           onClick={e => e.stopPropagation()}>
-          <span className="text-xs text-gray-400 dark:text-surface-500">{timeAgo(job.created_at)}</span>
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            {job.match_reasoning && (
-              <span title={job.match_reasoning} className="text-xs text-brand-600 dark:text-brand-400 cursor-help">AI ✨</span>
-            )}
+          {/* Left: secondary actions */}
+          <div className="flex items-center gap-1">
             {onScore && (
               <button onClick={handleScore} disabled={scoring}
-                className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-gray-50 dark:bg-surface-700 text-gray-600 dark:text-surface-300 hover:bg-gray-100 dark:hover:bg-surface-600 disabled:opacity-50"
-                aria-label="Re-score this job with AI">
-                <Star className="w-3 h-3 inline mr-0.5" />{scoring ? '...' : 'Score'}
+                className="text-xs px-2 py-1 rounded-md text-gray-500 dark:text-surface-400 hover:bg-gray-100 dark:hover:bg-surface-700 disabled:opacity-50">
+                {scoring ? '...' : '⟳ Score'}
               </button>
             )}
             {onTailor && (
               <button onClick={handleTailor} disabled={tailoring}
-                className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 disabled:opacity-50"
-                aria-label="Tailor resume for this job">
-                <FileText className="w-3 h-3 inline mr-0.5" />{tailoring ? '...' : 'Tailor'}
-              </button>
-            )}
-            <a href={job.url} target="_blank" rel="noopener noreferrer"
-              className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-gray-50 dark:bg-surface-700 text-gray-600 dark:text-surface-300 hover:bg-gray-100 dark:hover:bg-surface-600"
-              aria-label="View original posting">
-              <ExternalLink className="w-3 h-3 inline mr-0.5" />View
-            </a>
-            {['new', 'reviewed', 'shortlisted'].includes(job.status) && onApply && (
-              <button onClick={() => onApply(job._id)}
-                className="text-xs px-2.5 sm:px-3 py-1 rounded-md bg-brand-600 text-white hover:bg-brand-700 font-medium"
-                aria-label="Apply to this job">
-                Apply
-              </button>
-            )}
-            {onDelete && (
-              <button onClick={() => setShowDeleteConfirm(true)}
-                className="text-xs px-2 sm:px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
-                aria-label="Delete this job">
-                <Trash2 className="w-3 h-3" />
+                className="text-xs px-2 py-1 rounded-md text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 disabled:opacity-50">
+                {tailoring ? '...' : '✎ Tailor'}
               </button>
             )}
             {onCompare && (
               <button onClick={() => onCompare(job._id)}
-                className={`text-xs px-2 sm:px-2.5 py-1 rounded-md ${
-                  isComparing
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
-                }`}
-                aria-label={isComparing ? 'Remove from comparison' : 'Add to comparison'}
-                aria-pressed={isComparing}>
-                {isComparing ? '✓ Compare' : '⇔ Compare'}
+                className={`text-xs px-2 py-1 rounded-md ${isComparing ? 'text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/40' : 'text-gray-500 dark:text-surface-400 hover:bg-gray-100 dark:hover:bg-surface-700'}`}>
+                {isComparing ? '✓ Comparing' : '⇔ Compare'}
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => setShowDeleteConfirm(true)}
+                className="text-xs p-1 rounded-md text-gray-400 dark:text-surface-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          {/* Right: primary actions */}
+          <div className="flex items-center gap-1.5">
+            <a href={job.url} target="_blank" rel="noopener noreferrer"
+              className="text-xs px-2.5 py-1 rounded-md border border-gray-200 dark:border-surface-600 text-gray-600 dark:text-surface-300 hover:bg-gray-50 dark:hover:bg-surface-700">
+              View ↗
+            </a>
+            {['new', 'reviewed', 'shortlisted'].includes(job.status) && onApply && (
+              <button onClick={() => onApply(job._id)}
+                className="text-xs px-3 py-1 rounded-md bg-brand-600 text-white hover:bg-brand-700 font-medium flex items-center gap-1">
+                Apply <ArrowRight className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -158,22 +164,13 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
       </div>
 
       {/* Modals */}
-      {showDetail && (
-        <JobDetailModal job={job} onClose={() => setShowDetail(false)}
-          onApply={onApply} onScore={onScore} onTailor={onTailor} />
-      )}
-      {pdfUrl && (
-        <PdfViewer url={pdfUrl} title={`${job.title} — ${job.company}`} onClose={() => setPdfUrl(null)} />
-      )}
+      {showDetail && <JobDetailModal job={job} onClose={() => setShowDetail(false)} onApply={onApply} onScore={onScore} onTailor={onTailor} />}
+      {pdfUrl && <PdfViewer url={pdfUrl} title={`${job.title} — ${job.company}`} onClose={() => setPdfUrl(null)} />}
       {showDeleteConfirm && (
-        <ConfirmDialog
-          title="Delete Job"
-          message={`Remove "${job.title}" at ${job.company} from your list? This can't be undone.`}
-          confirmLabel="Delete"
-          variant="danger"
+        <ConfirmDialog title="Delete Job" message={`Remove "${job.title}" at ${job.company}?`}
+          confirmLabel="Delete" variant="danger"
           onConfirm={() => { setShowDeleteConfirm(false); onDelete(job._id) }}
-          onCancel={() => setShowDeleteConfirm(false)}
-        />
+          onCancel={() => setShowDeleteConfirm(false)} />
       )}
     </>
   )

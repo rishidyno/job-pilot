@@ -19,6 +19,27 @@ export function scoreColor(score) {
   return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40'
 }
 
+/** Get human-readable label for a match score */
+export function scoreLabel(score) {
+  if (score == null) return ''
+  if (score >= 90) return 'Excellent'
+  if (score >= 75) return 'Strong'
+  if (score >= 60) return 'Good'
+  if (score >= 40) return 'Fair'
+  return 'Weak'
+}
+
+/** Get freshness indicator for a date */
+export function freshness(date) {
+  if (!date) return { label: '', color: '' }
+  const hours = (Date.now() - new Date(date).getTime()) / 3600000
+  if (hours < 24) return { label: 'Today', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' }
+  if (hours < 72) return { label: `${Math.floor(hours / 24)}d ago`, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' }
+  if (hours < 168) return { label: `${Math.floor(hours / 24)}d ago`, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30' }
+  if (hours < 720) return { label: `${Math.floor(hours / 24)}d ago`, color: 'text-gray-500 dark:text-surface-400 bg-gray-100 dark:bg-surface-700' }
+  return { label: `${Math.floor(hours / 24)}d ago`, color: 'text-gray-400 dark:text-surface-500 bg-gray-50 dark:bg-surface-800' }
+}
+
 /** Get color for application status badge */
 export function statusColor(status) {
   const colors = {
