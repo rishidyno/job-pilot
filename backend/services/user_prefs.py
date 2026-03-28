@@ -28,8 +28,9 @@ async def get_user_prefs() -> dict:
         "scrape_interval_hours": settings.SCRAPE_INTERVAL_HOURS,
         "telegram_bot_token": settings.TELEGRAM_BOT_TOKEN,
         "telegram_chat_id": settings.TELEGRAM_CHAT_ID,
-        # Portal credentials — empty by default, user sets via UI
         "portal_credentials": {},
+        "rules_md": "",
+        "profile_md": "",
     }
 
     if not profile:

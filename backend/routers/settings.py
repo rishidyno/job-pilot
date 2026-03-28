@@ -23,10 +23,15 @@ from utils.logger import logger
 
 router = APIRouter(prefix="/api/settings", tags=["Settings"])
 
-# Paths for editable markdown files
+# Default templates for new users (seeded on first access)
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
-RULES_PATH = os.path.join(DATA_DIR, "rules.md")
-PROFILE_PATH = os.path.join(DATA_DIR, "profile.md")
+
+def _load_default(filename):
+    try:
+        with open(os.path.join(DATA_DIR, filename), "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
 
 
 class MarkdownContent(BaseModel):
@@ -35,39 +40,47 @@ class MarkdownContent(BaseModel):
 
 @router.get("/rules")
 async def get_rules(user_id: str = Depends(get_current_user_id)):
-    """Get the resume/cover letter generation rules."""
-    try:
-        with open(RULES_PATH, "r") as f:
-            return {"content": f.read()}
-    except FileNotFoundError:
-        return {"content": ""}
+    """Get the user's AI rules from MongoDB."""
+    profile_col = get_collection("user_profile")
+    profile = await profile_col.find_one({"user_id": user_id})
+    content = profile.get("rules_md", "") if profile else ""
+    if not content:
+        content = _load_default("rules.md")
+    return {"content": content}
 
 
 @router.put("/rules")
 async def update_rules(data: MarkdownContent, user_id: str = Depends(get_current_user_id)):
-    """Update the resume/cover letter generation rules."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(RULES_PATH, "w") as f:
-        f.write(data.content)
+    """Update the user's AI rules in MongoDB."""
+    profile_col = get_collection("user_profile")
+    await profile_col.update_one(
+        {"user_id": user_id},
+        {"$set": {"rules_md": data.content, "updated_at": utc_now()}},
+        upsert=True,
+    )
     return {"success": True}
 
 
 @router.get("/profile-md")
 async def get_profile_md(user_id: str = Depends(get_current_user_id)):
-    """Get the candidate profile markdown."""
-    try:
-        with open(PROFILE_PATH, "r") as f:
-            return {"content": f.read()}
-    except FileNotFoundError:
-        return {"content": ""}
+    """Get the user's candidate profile from MongoDB."""
+    profile_col = get_collection("user_profile")
+    profile = await profile_col.find_one({"user_id": user_id})
+    content = profile.get("profile_md", "") if profile else ""
+    if not content:
+        content = _load_default("profile.md")
+    return {"content": content}
 
 
 @router.put("/profile-md")
 async def update_profile_md(data: MarkdownContent, user_id: str = Depends(get_current_user_id)):
-    """Update the candidate profile markdown."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(PROFILE_PATH, "w") as f:
-        f.write(data.content)
+    """Update the user's candidate profile in MongoDB."""
+    profile_col = get_collection("user_profile")
+    await profile_col.update_one(
+        {"user_id": user_id},
+        {"$set": {"profile_md": data.content, "updated_at": utc_now()}},
+        upsert=True,
+    )
     return {"success": True}
 
 

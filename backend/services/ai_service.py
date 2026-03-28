@@ -100,29 +100,6 @@ class AIService:
     def __init__(self):
         self.model = "kiro-cli (local)"
         self._total_requests = 0
-        # Load rules.md if it exists
-        self._rules_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "rules.md"
-        )
-        self._profile_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "profile.md"
-        )
-
-    def _load_file(self, path: str) -> str:
-        """Load a text file, return empty string if not found."""
-        try:
-            with open(path, "r") as f:
-                return f.read()
-        except FileNotFoundError:
-            return ""
-
-    @property
-    def rules(self) -> str:
-        return self._load_file(self._rules_path)
-
-    @property
-    def profile(self) -> str:
-        return self._load_file(self._profile_path)
 
     async def _run_kiro(self, prompt: str) -> str:
         """

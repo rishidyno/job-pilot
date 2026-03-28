@@ -50,13 +50,15 @@ Skills: {', '.join(job_skills) if job_skills else 'See description'}
 Description:
 {job_description[:3000] if job_description else 'No description available — tailor based on job title, company, and skills listed above.'}""")
 
-        # Include tailoring rules if available
-        rules = ai_service.rules
+        # Include tailoring rules if available (from user's MongoDB profile)
+        from services.user_prefs import get_user_prefs
+        prefs = await get_user_prefs()
+        rules = prefs.get("rules_md", "")
         if rules:
             parts.append(f"=== TAILORING RULES (follow these strictly) ===\n{rules[:4000]}")
 
-        # Include candidate profile if available
-        profile = ai_service.profile
+        # Include candidate profile if available (from user's MongoDB profile)
+        profile = prefs.get("profile_md", "")
         if profile:
             parts.append(f"=== CANDIDATE PROFILE (use for accuracy) ===\n{profile[:3000]}")
 
