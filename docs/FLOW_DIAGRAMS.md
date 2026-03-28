@@ -3,221 +3,113 @@
 ## 1. Job Scraping Flow
 
 ```
-User clicks "Scrape Now"          Scheduler triggers every N hours
-        │                                    │
-        └──────────────┬─────────────────────┘
-                       ▼
-              ┌─────────────────┐
-              │ ScraperManager  │
-              │ .scrape_all()   │
-              └────────┬────────┘
-                       │
-          ┌────────────┼────────────┬────────────┐
-          ▼            ▼            ▼            ▼
-    ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-    │ LinkedIn │ │  Naukri   │ │Wellfound │ │  Indeed  │ ...
-    │ Scraper  │ │ Scraper  │ │ Scraper  │ │ Scraper  │
-    └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘
-         │            │            │            │
-         └────────────┼────────────┼────────────┘
-                      ▼
-         ┌─────────────────────────┐
-         │  For each scraped job:  │
-         │  1. Generate hash       │
-         │  2. Check for duplicate │
-         │  3. Quick score (0-100) │
-         │  4. Insert to MongoDB   │
-         │  5. If high match:      │
-         │     → Telegram alert    │
-         └─────────────────────────┘
+User clicks "Scrape Now" (Dashboard or Jobs page)
+        │
+        ▼
+POST /api/jobs/scrape ──▶ Background task created
+        │                        │
+        ▼                        ▼
+Returns immediately      scraper_manager.scrape_all()
+(UI starts polling)              │
+        │                        ▼
+        │               Load user preferences from MongoDB
+        │                        │
+        │                        ▼
+        │               Expand keywords (synonyms)
+        │                        │
+        │                        ▼
+        │               For each portal × keyword:
+        │                   python-jobspy scrape_jobs()
+        │                   (runs in thread, non-blocking)
+        │                        │
+        │                        ▼
+        │               For each job found:
+        │                   ├── Generate dedup hash
+        │                   ├── Quick match score
+        │                   ├── Insert to MongoDB (skip dupes)
+        │                   ├── Emit live event to status
+        │                   └── Telegram alert if high match
+        │                        │
+        ▼                        ▼
+GET /api/jobs/scrape/status     Scrape complete
+(polls every 2 seconds)
 ```
 
-## 2. Apply Pipeline Flow
+## 2. Resume Tailoring Flow
 
 ```
-User clicks "Apply"                Auto-apply scheduler
-on dashboard                       picks up queued jobs
-        │                                    │
-        └──────────────┬─────────────────────┘
-                       ▼
-              ┌─────────────────┐
-              │ ApplierManager  │
-              │ .apply_to_job() │
-              └────────┬────────┘
-                       │
-         ┌─────────────┼─────────────────┐
-         ▼             ▼                 ▼
-  ┌──────────┐  ┌──────────────┐  ┌──────────────┐
-  │ Get Job  │  │ Get Base     │  │ Check:       │
-  │ from DB  │  │ Resume       │  │ Already      │
-  │          │  │ from DB      │  │ applied?     │
-  └────┬─────┘  └──────┬───────┘  │ Score OK?    │
-       │               │          └──────┬───────┘
-       └───────┬───────┘                 │
-               ▼                         │
-  ┌─────────────────────────┐           │
-  │  Claude AI: Tailor      │◄──────────┘
-  │  Resume for this JD     │
-  │  (preserve all facts,   │
-  │   reword for relevance) │
-  └───────────┬─────────────┘
-              │
-              ▼
-  ┌─────────────────────────┐
-  │  Claude AI: Generate    │
-  │  Cover Letter           │
-  │  (3-4 paragraphs,      │
-  │   specific to company)  │
-  └───────────┬─────────────┘
-              │
-              ▼
-  ┌─────────────────────────┐
-  │  PDF Generator:         │
-  │  • Original-style PDF   │
-  │  • Clean-template PDF   │
-  │  • Cover letter PDF     │
-  └───────────┬─────────────┘
-              │
-              ▼
-  ┌─────────────────────────┐
-  │  Portal-specific        │
-  │  Applier (Playwright):  │
-  │  • Navigate to job      │
-  │  • Click Apply          │
-  │  • Fill form fields     │
-  │  • Upload resume        │
-  │  • Submit               │
-  └───────────┬─────────────┘
-              │
-       ┌──────┴──────┐
-       ▼             ▼
-  ┌─────────┐  ┌─────────┐
-  │ SUCCESS │  │ FAILED  │
-  └────┬────┘  └────┬────┘
-       │            │
-       ▼            ▼
-  ┌─────────────────────────┐
-  │  Create Application     │
-  │  record in MongoDB      │
-  │  with status + events   │
-  └───────────┬─────────────┘
-              │
-              ▼
-  ┌─────────────────────────┐
-  │  Telegram notification  │
-  │  (success or failure)   │
-  └─────────────────────────┘
+User clicks "Tailor" on a job card
+        │
+        ▼
+POST /api/resumes/tailor?job_id=xxx
+        │
+        ▼
+Fetch base LaTeX resume from MongoDB
+        │
+        ▼
+Fetch job description + skills
+        │
+        ▼
+Send to Kiro CLI (Claude):
+  - Base LaTeX + JD + rules.md + profile.md
+  - "Modify this LaTeX for this job"
+        │
+        ▼
+AI returns modified LaTeX + changes list
+        │
+        ▼
+Save tailored resume to MongoDB
+(with job_title, company, url, score)
+        │
+        ▼
+Re-score the job (quick_score + 5 boost)
+        │
+        ▼
+Return resume_id + changes + new_score
 ```
 
-## 3. Resume Tailoring Flow
+## 3. Authentication Flow
 
 ```
-  ┌──────────────┐     ┌──────────────────┐
-  │ Base Resume  │     │ Job Description  │
-  │ (your real   │     │ (scraped from    │
-  │  resume)     │     │  portal)         │
-  └──────┬───────┘     └────────┬─────────┘
-         │                      │
-         └──────────┬───────────┘
-                    ▼
-         ┌──────────────────────┐
-         │    Claude AI API     │
-         │                      │
-         │  System Prompt:      │
-         │  "You are a resume   │
-         │   expert. NEVER      │
-         │   fabricate..."      │
-         │                      │
-         │  Input:              │
-         │  • Full resume text  │
-         │  • Full job desc     │
-         │  • Required skills   │
-         │  • Company name      │
-         └──────────┬───────────┘
-                    │
-                    ▼
-         ┌──────────────────────┐
-         │  Structured JSON     │
-         │  Response:           │
-         │  • tailored summary  │
-         │  • reordered skills  │
-         │  • reworded bullets  │
-         │  • changes log       │
-         │  • ATS keywords      │
-         └──────────┬───────────┘
-                    │
-           ┌───────┴───────┐
-           ▼               ▼
-  ┌─────────────┐  ┌─────────────┐
-  │ Original    │  │ Clean       │
-  │ Template    │  │ Template    │
-  │ (LaTeX-like)│  │ (Modern)    │
-  └──────┬──────┘  └──────┬──────┘
-         │               │
-         ▼               ▼
-  ┌─────────────┐  ┌─────────────┐
-  │ PDF via     │  │ PDF via     │
-  │ WeasyPrint  │  │ WeasyPrint  │
-  └─────────────┘  └─────────────┘
+Register: POST /api/auth/register
+  ├── Validate fields (email regex, password strength)
+  ├── Hash password (bcrypt)
+  ├── Insert user to MongoDB
+  ├── Create JWT token
+  └── Return token + user
+
+Login: POST /api/auth/login
+  ├── Find user by email
+  ├── Verify password hash
+  ├── Create JWT token
+  └── Return token + user
+
+Every API call:
+  ├── Frontend: Axios interceptor adds Bearer token
+  ├── Backend: Depends(get_current_user_id) validates JWT
+  └── Extracts user_id for data isolation
 ```
 
-## 4. Job Match Scoring Flow
+## 4. Application Tracking Flow
 
 ```
-         ┌──────────────┐
-         │  New Job      │
-         │  Scraped      │
-         └──────┬───────┘
-                │
-                ▼
-  ┌──────────────────────────┐
-  │  QUICK SCORE (no API)    │
-  │  Heuristic-based:        │
-  │  • Skills overlap (50pt) │
-  │  • Location match (20pt) │
-  │  • Title keywords (30pt) │
-  │  = 0-100 rough score     │
-  └──────────┬───────────────┘
-             │
-             │  Score saved to DB
-             │
-             ▼
-  ┌──────────────────────────┐
-  │  User clicks "Re-score"  │
-  │  OR auto-score for       │
-  │  high quick-score jobs   │
-  └──────────┬───────────────┘
-             │
-             ▼
-  ┌──────────────────────────┐
-  │  FULL AI SCORE (Claude)  │
-  │  Analyzes:               │
-  │  • Skills (35%)          │
-  │  • Experience fit (25%)  │
-  │  • Role alignment (20%) │
-  │  • Location (10%)        │
-  │  • Growth potential (10%)│
-  │  = 0-100 precise score   │
-  │  + detailed reasoning    │
-  └──────────────────────────┘
-```
-
-## 5. Notification Flow
-
-```
-  ┌──────────────────┐
-  │ Event occurs:    │
-  │ • High-match job │
-  │ • App submitted  │
-  │ • App failed     │
-  │ • Scrape done    │
-  │ • Daily summary  │
-  └────────┬─────────┘
-           │
-           ▼
-  ┌──────────────────┐    ┌──────────────────┐
-  │ Dashboard        │    │ Telegram Bot     │
-  │ (always updated  │    │ (if configured)  │
-  │  via API polling)│    │                  │
-  └──────────────────┘    └──────────────────┘
+User clicks "Apply" on a job
+        │
+        ▼
+POST /api/applications?job_id=xxx
+        │
+        ▼
+Create application record in MongoDB
+  (status: pending, job context, timestamp)
+        │
+        ▼
+Update job status to "applied"
+        │
+        ▼
+Return job URL for manual application
+        │
+        ▼
+User tracks progress via Kanban board:
+  Pending → Applied → Interview → Offered → Accepted
+  (drag and drop updates status via PATCH)
 ```

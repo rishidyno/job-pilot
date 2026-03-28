@@ -1,130 +1,76 @@
 # JobPilot — API Reference
 
-Base URL: `http://localhost:8000`  
+Base URL: `http://localhost:8000`
 Interactive Docs: `http://localhost:8000/docs` (Swagger UI)
 
----
+All endpoints except `/api/auth/register` and `/api/auth/login` require a Bearer token.
+
+## Auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Create account (returns JWT) |
+| POST | `/api/auth/login` | Login (returns JWT) |
+| GET | `/api/auth/me` | Get current user |
 
 ## Jobs
 
-### `GET /api/jobs`
-List jobs with filtering, sorting, and pagination.
-
-**Query Parameters:**
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| status | string | — | Filter: new, reviewed, shortlisted, applied, etc. |
-| portal | string | — | Filter: linkedin, naukri, wellfound, etc. |
-| min_score | int | — | Minimum match score (0-100) |
-| search | string | — | Full-text search in title, company, description |
-| sort_by | string | match_score | Sort field: match_score, created_at, title |
-| sort_order | string | desc | Sort direction: asc or desc |
-| skip | int | 0 | Pagination offset |
-| limit | int | 50 | Page size (max 200) |
-
-**Response:** `{ jobs: [...], total: int, skip: int, limit: int, has_more: bool }`
-
-### `GET /api/jobs/:id`
-Get a single job with full details.
-
-### `PATCH /api/jobs/:id`
-Update a job's status, notes, or apply mode.
-
-**Body:** `{ status?, match_score?, notes?, apply_mode? }`
-
-### `DELETE /api/jobs/:id`
-Delete a job from the database.
-
-### `POST /api/jobs/scrape`
-Trigger a manual scrape run (runs in background).
-
-**Query:** `portals=linkedin,naukri` (optional — defaults to all)
-
-### `POST /api/jobs/:id/score`
-Re-score a job using full AI analysis (Claude API call).
-
----
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/jobs` | List jobs (filters: status, portal, bookmarked, min_score, search) |
+| GET | `/api/jobs/{id}` | Get single job |
+| PATCH | `/api/jobs/{id}` | Update job (status, notes, bookmarked) |
+| DELETE | `/api/jobs/{id}` | Delete job |
+| POST | `/api/jobs/{id}/score` | Re-score with AI |
+| GET | `/api/jobs/export` | Download all jobs as CSV |
+| POST | `/api/jobs/scrape` | Trigger scrape (optional: portals param) |
+| GET | `/api/jobs/scrape/status` | Live scrape status + logs |
+| POST | `/api/jobs/scrape/stop` | Stop running scrape |
 
 ## Applications
 
-### `GET /api/applications`
-List all applications with optional status filter.
-
-### `GET /api/applications/:id`
-Get application details including event timeline.
-
-### `POST /api/applications`
-Apply to a job — triggers the full pipeline (tailor resume → generate cover letter → auto-apply).
-
-**Query:** `job_id=string&force=bool`
-
-### `PATCH /api/applications/:id`
-Update status or notes.
-
-**Query:** `status=string&notes=string`
-
-### `POST /api/applications/:id/retry`
-Retry a failed application.
-
----
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/applications` | List applications (filter by status) |
+| GET | `/api/applications/{id}` | Get application details |
+| POST | `/api/applications` | Create application for a job |
+| PATCH | `/api/applications/{id}` | Update status/notes |
+| POST | `/api/applications/{id}/retry` | Retry failed application |
 
 ## Resumes
 
-### `POST /api/resumes/upload-base`
-Upload your base resume (PDF, multipart/form-data).
-
-### `GET /api/resumes`
-List all resume versions (base + tailored).
-
-### `POST /api/resumes/tailor`
-Generate a tailored resume for a specific job.
-
-**Query:** `job_id=string`
-
-### `POST /api/resumes/cover-letter`
-Generate a cover letter for a specific job.
-
-**Query:** `job_id=string&tone=professional|enthusiastic|concise`
-
-### `GET /api/resumes/download/:id`
-Download a resume PDF.
-
-**Query:** `style=original|clean`
-
----
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/resumes/latex` | Get base LaTeX source |
+| PUT | `/api/resumes/latex` | Update base LaTeX source |
+| GET | `/api/resumes` | List all resume versions |
+| GET | `/api/resumes/{id}` | Get specific resume |
+| GET | `/api/resumes/compile/{id}` | Compile LaTeX → PDF (needs token param) |
+| POST | `/api/resumes/tailor` | AI-tailor resume for a job |
+| POST | `/api/resumes/cover-letter` | Generate cover letter |
 
 ## Dashboard
 
-### `GET /api/dashboard/stats`
-Key metrics: total jobs, new today, applied, interviews, offers, avg score.
-
-### `GET /api/dashboard/pipeline`
-Application pipeline counts per status.
-
-### `GET /api/dashboard/portals`
-Per-portal breakdown (total jobs, avg score, high matches).
-
-### `GET /api/dashboard/timeline`
-Daily job counts for the past 30 days (for charting).
-
-### `GET /api/dashboard/recent-activity`
-10 most recent actions (jobs found, applications).
-
----
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard/stats` | Key metrics |
+| GET | `/api/dashboard/timeline` | Jobs over time (30 days) |
+| GET | `/api/dashboard/portals` | Per-portal breakdown |
+| GET | `/api/dashboard/pipeline` | Application pipeline counts |
+| GET | `/api/dashboard/recent-activity` | Latest jobs + applications |
+| GET | `/api/dashboard/salary-insights` | Salary data + skill demand |
 
 ## Settings
 
-### `GET /api/settings/profile`
-Get user profile and preferences.
-
-### `PUT /api/settings/profile`
-Update profile and preferences.
-
-### `GET /api/settings/scheduler`
-Get scheduler status and upcoming jobs.
-
-### `GET /api/settings/portals`
-Get connection status for all supported portals.
-
-### `GET /api/settings/health`
-Health check with AI token usage stats.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/settings/profile` | Get user profile + preferences |
+| PUT | `/api/settings/profile` | Update profile + preferences |
+| GET | `/api/settings/scheduler` | Scheduler status |
+| POST | `/api/settings/scheduler` | Update scrape interval |
+| GET | `/api/settings/portals` | Portal connection status |
+| GET | `/api/settings/rules` | Get AI rules (markdown) |
+| PUT | `/api/settings/rules` | Update AI rules |
+| GET | `/api/settings/profile-md` | Get candidate profile (markdown) |
+| PUT | `/api/settings/profile-md` | Update candidate profile |
+| GET | `/api/settings/health` | Health check |
