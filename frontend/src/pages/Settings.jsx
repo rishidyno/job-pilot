@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { Save, CheckCircle, XCircle, Clock, Zap, FileText, User } from 'lucide-react'
+import MarkdownEditor from '../components/MarkdownEditor'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
@@ -257,41 +258,24 @@ export default function Settings() {
 
       {/* Rules & Profile Markdown Editors */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-        <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-brand-500" /> AI Rules
-            </h2>
-            <button onClick={handleSaveRules}
-              className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700"
-              aria-label="Save AI rules">
-              <Save className="w-3 h-3" /> Save
-            </button>
-          </div>
-          <textarea value={rulesContent} onChange={e => setRulesContent(e.target.value)}
-            rows={12} className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-            placeholder="Enter resume/cover letter generation rules..."
-            aria-label="AI rules editor" />
-          <p className="text-xs text-gray-400 dark:text-surface-500 mt-2">Sent to AI when tailoring resumes and generating cover letters.</p>
-        </div>
-
-        <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <User className="w-5 h-5 text-brand-500" /> Candidate Profile
-            </h2>
-            <button onClick={handleSaveProfileMd}
-              className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700"
-              aria-label="Save candidate profile">
-              <Save className="w-3 h-3" /> Save
-            </button>
-          </div>
-          <textarea value={profileMdContent} onChange={e => setProfileMdContent(e.target.value)}
-            rows={12} className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-            placeholder="Enter your skills, experience, projects..."
-            aria-label="Candidate profile editor" />
-          <p className="text-xs text-gray-400 dark:text-surface-500 mt-2">AI uses this to keep resumes truthful and realistic.</p>
-        </div>
+        <MarkdownEditor
+          value={rulesContent}
+          onChange={setRulesContent}
+          onSave={handleSaveRules}
+          label="AI Rules"
+          icon={FileText}
+          description="Sent to AI when tailoring resumes and generating cover letters."
+          placeholder="# Resume Rules&#10;- Must be 1 page&#10;- No fabricated skills&#10;..."
+        />
+        <MarkdownEditor
+          value={profileMdContent}
+          onChange={setProfileMdContent}
+          onSave={handleSaveProfileMd}
+          label="Candidate Profile"
+          icon={User}
+          description="AI uses this to keep resumes truthful and realistic."
+          placeholder="# Personal Info&#10;- Name: ...&#10;- Skills: ...&#10;..."
+        />
       </div>
 
       {/* Health info */}
