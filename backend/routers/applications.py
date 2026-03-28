@@ -15,7 +15,6 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 from bson import ObjectId
 from database import get_collection
-from appliers.applier_manager import applier_manager
 from services.auth_service import get_current_user_id
 from utils.helpers import utc_now
 from utils.logger import logger
@@ -152,7 +151,7 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
 
 @router.post("/{app_id}/retry")
 async def retry_application(app_id: str, user_id: str = Depends(get_current_user_id)):
-    """Retry a failed application."""
+    """Retry a failed application — resets status to pending."""
     apps_col = get_collection("applications")
     app = await apps_col.find_one({"_id": ObjectId(app_id), "user_id": user_id})
 
@@ -161,8 +160,9 @@ async def retry_application(app_id: str, user_id: str = Depends(get_current_user
     if app.get("status") != "failed":
         raise HTTPException(status_code=400, detail="Can only retry failed applications")
 
-    # Delete the failed application and re-apply
-    await apps_col.delete_one({"_id": ObjectId(app_id), "user_id": user_id})
-    result = await applier_manager.apply_to_job(job_id=app["job_id"], force=True, user_id=user_id)
-
-    return result
+    await apps_col.update_one(
+        {"_id": ObjectId(app_id)},
+        {"$set": {"status": "pending", "error_message": None, "updated_at": utc_now()},
+         "$push": {"events": {"timestamp": utc_now(), "event_type": "retry", "description": "Application retried"}}},
+    )
+    return {"success": True}

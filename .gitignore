@@ -8,14 +8,20 @@ __pycache__/
 *.pyo
 venv/
 .venv/
+.pytest_cache/
 
 # Node
 node_modules/
 dist/
 
-# Data (resumes, cover letters contain PII)
+# Data (user content)
 data/resumes/*.pdf
 data/cover_letters/*.pdf
+data/jobs_backup_*.json
+
+# Logs
+backend/logs/
+*.log
 
 # OS
 .DS_Store
@@ -25,6 +31,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Logs
-*.log
-data/jobs_backup_*.json
+# AI context (internal)
+.claude/
+CLAUDE.md
