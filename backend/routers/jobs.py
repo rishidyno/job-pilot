@@ -72,6 +72,7 @@ router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 async def list_jobs(
     status: Optional[str] = Query(None),
     portal: Optional[str] = Query(None),
+    bookmarked: Optional[bool] = Query(None),
     min_score: Optional[int] = Query(None, ge=0, le=100),
     search: Optional[str] = Query(None),
     sort_by: str = Query("match_score"),
@@ -86,6 +87,8 @@ async def list_jobs(
         query["status"] = status
     if portal:
         query["portal"] = portal
+    if bookmarked is not None:
+        query["bookmarked"] = bookmarked
     if min_score is not None:
         query["match_score"] = {"$gte": min_score}
     if search:
@@ -207,6 +210,43 @@ async def update_job(job_id: str, update: JobUpdate, user_id: str = Depends(get_
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"success": True, "modified": result.modified_count}
+
+
+@router.get("/export")
+async def export_jobs(format: str = "csv", user_id: str = Depends(get_current_user_id)):
+    """Export all jobs as CSV."""
+    import csv, io
+    from starlette.responses import Response
+
+    jobs_col = get_collection("jobs")
+    cursor = jobs_col.find({"user_id": user_id}).sort("match_score", -1)
+    jobs = await cursor.to_list(5000)
+
+    output = io.StringIO()
+    fields = ["title", "company", "location", "portal", "match_score", "status", "bookmarked", "skills", "salary", "url", "notes", "created_at"]
+    writer = csv.DictWriter(output, fieldnames=fields)
+    writer.writeheader()
+    for j in jobs:
+        writer.writerow({
+            "title": j.get("title", ""),
+            "company": j.get("company", ""),
+            "location": j.get("location", ""),
+            "portal": j.get("portal", ""),
+            "match_score": j.get("match_score", ""),
+            "status": j.get("status", ""),
+            "bookmarked": "Yes" if j.get("bookmarked") else "",
+            "skills": ", ".join(j.get("skills", [])),
+            "salary": j.get("salary", ""),
+            "url": j.get("url", ""),
+            "notes": j.get("notes", ""),
+            "created_at": str(j.get("created_at", "")),
+        })
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=jobpilot_jobs.csv"},
+    )
 
 
 @router.delete("/{job_id}")

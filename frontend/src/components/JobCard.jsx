@@ -3,7 +3,7 @@
  * Dark mode, job detail modal on click, confirm dialog for delete.
  */
 
-import { MapPin, ExternalLink, Star, Clock, Trash2, FileText, Eye } from 'lucide-react'
+import { MapPin, ExternalLink, Star, Clock, Trash2, FileText, Eye, Bookmark } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import MatchScore from './MatchScore'
 import PdfViewer from './PdfViewer'
@@ -13,7 +13,7 @@ import api from '../api/client'
 import { portalLabel, portalColor, truncate, timeAgo } from '../utils/helpers'
 import { useState } from 'react'
 
-export default function JobCard({ job, onApply, onScore, onDelete, onTailor }) {
+export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote }) {
   const [tailoring, setTailoring] = useState(false)
   const [scoring, setScoring] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
@@ -55,6 +55,13 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor }) {
             </div>
           </div>
           <StatusBadge status={job.status} />
+          {onBookmark && (
+            <button onClick={e => { e.stopPropagation(); onBookmark(job._id, !job.bookmarked) }}
+              className="p-1 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/30"
+              aria-label={job.bookmarked ? 'Remove bookmark' : 'Bookmark this job'}>
+              <Bookmark className={`w-4 h-4 ${job.bookmarked ? 'fill-amber-400 text-amber-400' : 'text-gray-300 dark:text-surface-600'}`} />
+            </button>
+          )}
         </div>
 
         {/* Skills */}
@@ -81,6 +88,13 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor }) {
               aria-label="View tailored resume PDF">
               <Eye className="w-3 h-3" /> View
             </button>
+          </div>
+        )}
+
+        {/* Notes preview */}
+        {job.notes && (
+          <div className="mt-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg" onClick={e => e.stopPropagation()}>
+            <p className="text-xs text-amber-700 dark:text-amber-300 line-clamp-1">📝 {job.notes}</p>
           </div>
         )}
 

@@ -96,10 +96,11 @@ class JobUpdate(BaseModel):
     All fields are optional — only provided fields will be updated.
     """
     status: Optional[JobStatus] = None
-    match_score: Optional[int] = Field(None, ge=0, le=100, description="AI match score 0-100")
-    match_reasoning: Optional[str] = Field(None, description="AI explanation for the match score")
-    notes: Optional[str] = Field(None, description="User's personal notes about this job")
-    apply_mode: Optional[str] = Field(None, description="'auto' or 'semi' for this specific job")
+    match_score: Optional[int] = Field(None, ge=0, le=100)
+    match_reasoning: Optional[str] = None
+    notes: Optional[str] = None
+    bookmarked: Optional[bool] = None
+    apply_mode: Optional[str] = None
 
 
 class Job(BaseModel):
@@ -116,6 +117,7 @@ class Job(BaseModel):
     match_score: Optional[int] = Field(None, ge=0, le=100, description="AI-computed match score")
     match_reasoning: Optional[str] = Field(None, description="Why the AI gave this score")
     notes: Optional[str] = Field(None, description="User's notes")
+    bookmarked: bool = Field(False, description="User bookmarked this job")
     apply_mode: str = Field("semi", description="Apply mode for this job: 'auto' or 'semi'")
     
     # ── Job details (from scraper) ──

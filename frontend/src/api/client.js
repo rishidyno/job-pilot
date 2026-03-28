@@ -72,6 +72,9 @@ const api = {
     get: (id) => http.get(`/api/jobs/${id}`),
     update: (id, data) => http.patch(`/api/jobs/${id}`, data),
     delete: (id) => http.delete(`/api/jobs/${id}`),
+    bookmark: (id, bookmarked) => http.patch(`/api/jobs/${id}`, { bookmarked }),
+    addNote: (id, notes) => http.patch(`/api/jobs/${id}`, { notes }),
+    exportCsv: () => '/api/jobs/export?format=csv',
     triggerScrape: (portals = null) => http.post('/api/jobs/scrape', null, portals ? {
       params: { portals: portals.join(',') },
     } : {}),

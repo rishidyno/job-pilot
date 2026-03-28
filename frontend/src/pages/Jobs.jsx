@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, Keyboard } from 'lucide-react'
 import JobCard from '../components/JobCard'
 import EmptyState from '../components/EmptyState'
 import ScrapeModal from '../components/ScrapeModal'
@@ -14,7 +14,7 @@ import { useApi, useApiMutation } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 
 const STATUS_OPTIONS = ['all', 'new', 'reviewed', 'shortlisted', 'applied', 'interviewing', 'rejected', 'skipped']
-const PORTAL_OPTIONS = ['all', 'linkedin', 'naukri', 'wellfound', 'instahyre', 'indeed', 'glassdoor']
+const PORTAL_OPTIONS = ['all', 'linkedin', 'indeed', 'glassdoor', 'google', 'naukri']
 const SORT_OPTIONS = [
   { value: 'match_score', label: 'Match Score' },
   { value: 'created_at', label: 'Date Found' },
@@ -25,6 +25,7 @@ export default function Jobs() {
   const toast = useToast()
   const [statusFilter, setStatusFilter] = useState('all')
   const [portalFilter, setPortalFilter] = useState('all')
+  const [bookmarkFilter, setBookmarkFilter] = useState(false)
   const [minScore, setMinScore] = useState('')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -61,17 +62,18 @@ export default function Jobs() {
   const buildParams = useCallback(() => ({
     ...(statusFilter !== 'all' && { status: statusFilter }),
     ...(portalFilter !== 'all' && { portal: portalFilter }),
+    ...(bookmarkFilter && { bookmarked: true }),
     ...(minScore && { min_score: parseInt(minScore) }),
     ...(debouncedSearch && { search: debouncedSearch }),
     sort_by: sortBy,
     sort_order: 'desc',
     skip: page * 50,
     limit: 50,
-  }), [statusFilter, portalFilter, minScore, debouncedSearch, sortBy, page])
+  }), [statusFilter, portalFilter, bookmarkFilter, minScore, debouncedSearch, sortBy, page])
 
   const { data, setData, loading, refetch } = useApi(
     () => api.jobs.list(buildParams()),
-    [statusFilter, portalFilter, minScore, debouncedSearch, sortBy, page]
+    [statusFilter, portalFilter, bookmarkFilter, minScore, debouncedSearch, sortBy, page]
   )
 
   const { execute } = useApiMutation()
@@ -132,6 +134,32 @@ export default function Jobs() {
     }
   }
 
+  const handleBookmark = async (jobId, bookmarked) => {
+    try {
+      await api.jobs.bookmark(jobId, bookmarked)
+      setData(prev => prev ? {
+        ...prev,
+        jobs: prev.jobs.map(j => j._id === jobId ? { ...j, bookmarked } : j)
+      } : prev)
+      toast.success(bookmarked ? 'Bookmarked' : 'Bookmark removed')
+    } catch (err) {
+      toast.error('Bookmark failed')
+    }
+  }
+
+  const handleNote = async (jobId, notes) => {
+    try {
+      await api.jobs.addNote(jobId, notes)
+      setData(prev => prev ? {
+        ...prev,
+        jobs: prev.jobs.map(j => j._id === jobId ? { ...j, notes } : j)
+      } : prev)
+      toast.success('Note saved')
+    } catch (err) {
+      toast.error('Note save failed')
+    }
+  }
+
   const jobs = data?.jobs || []
   const total = data?.total || 0
 
@@ -145,13 +173,20 @@ export default function Jobs() {
             {total} job{total !== 1 ? 's' : ''} found
           </p>
         </div>
-        <button onClick={() => setShowScrapeModal(true)} disabled={scraping}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50"
-          aria-label="Start scraping jobs">
-          {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          <span className="hidden sm:inline">{scraping ? 'Scraping...' : 'Scrape Now'}</span>
-          <span className="sm:hidden">Scrape</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <a href={api.jobs.exportCsv()} download
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300"
+            aria-label="Export jobs to CSV">
+            ↓ Export
+          </a>
+          <button onClick={() => setShowScrapeModal(true)} disabled={scraping}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50"
+            aria-label="Start scraping jobs">
+            {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            <span className="hidden sm:inline">{scraping ? 'Scraping...' : 'Scrape Now'}</span>
+            <span className="sm:hidden">Scrape</span>
+          </button>
+        </div>
       </div>
 
       {showScrapeModal && (
@@ -201,6 +236,15 @@ export default function Jobs() {
               aria-label="Sort by">
               {SORT_OPTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
             </select>
+
+            <button onClick={() => { setBookmarkFilter(b => !b); setPage(0) }}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm border ${
+                bookmarkFilter
+                  ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
+                  : 'bg-gray-50 dark:bg-surface-700 border-gray-200 dark:border-surface-700 text-gray-500 dark:text-surface-400'
+              }`} aria-label="Filter bookmarked jobs" aria-pressed={bookmarkFilter}>
+              ★ Saved
+            </button>
           </div>
         </div>
       </div>
@@ -221,7 +265,7 @@ export default function Jobs() {
       ) : (
         <div className="space-y-3 sm:space-y-4">
           {jobs.map(job => (
-            <JobCard key={job._id} job={job} onApply={handleApply} onScore={handleScore} onTailor={handleTailor} onDelete={handleDelete} />
+            <JobCard key={job._id} job={job} onApply={handleApply} onScore={handleScore} onTailor={handleTailor} onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote} />
           ))}
         </div>
       )}
