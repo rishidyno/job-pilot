@@ -64,6 +64,7 @@ const api = {
     getPortals: () => http.get('/api/dashboard/portals'),
     getTimeline: () => http.get('/api/dashboard/timeline'),
     getRecentActivity: () => http.get('/api/dashboard/recent-activity'),
+    getSalaryInsights: () => http.get('/api/dashboard/salary-insights'),
   },
 
   // ── Jobs ──
@@ -112,6 +113,7 @@ const api = {
     getProfile: () => http.get('/api/settings/profile'),
     updateProfile: (data) => http.put('/api/settings/profile', data),
     getScheduler: () => http.get('/api/settings/scheduler'),
+    updateScheduler: (data) => http.post('/api/settings/scheduler', data),
     getPortals: () => http.get('/api/settings/portals'),
     health: () => http.get('/api/settings/health'),
     getRules: () => http.get('/api/settings/rules'),

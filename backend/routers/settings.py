@@ -152,6 +152,28 @@ async def get_scheduler_status(user_id: str = Depends(get_current_user_id)):
     }
 
 
+@router.post("/scheduler")
+async def update_scheduler(data: dict, user_id: str = Depends(get_current_user_id)):
+    """Update scheduler interval from user preferences."""
+    from apscheduler.triggers.interval import IntervalTrigger
+    scheduler = get_scheduler()
+    if not scheduler or not scheduler.running:
+        raise HTTPException(status_code=400, detail="Scheduler not running")
+
+    hours = data.get("scrape_interval_hours")
+    if hours and isinstance(hours, (int, float)) and hours >= 1:
+        try:
+            scheduler.reschedule_job("scrape_all_portals", trigger=IntervalTrigger(hours=int(hours)))
+            # Also save to user profile
+            profile_col = get_collection("user_profile")
+            await profile_col.update_one({"user_id": user_id}, {"$set": {"scrape_interval_hours": int(hours)}}, upsert=True)
+            return {"success": True, "message": f"Scrape interval updated to {hours}h"}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    raise HTTPException(status_code=400, detail="Invalid interval")
+
+
 @router.get("/portals")
 async def get_portal_status(user_id: str = Depends(get_current_user_id)):
     """

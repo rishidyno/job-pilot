@@ -4,8 +4,9 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Search, Loader2, Keyboard } from 'lucide-react'
+import { Search, Loader2, Keyboard, GitCompare } from 'lucide-react'
 import JobCard from '../components/JobCard'
+import JobComparison from '../components/JobComparison'
 import EmptyState from '../components/EmptyState'
 import ScrapeModal from '../components/ScrapeModal'
 import Skeleton from '../components/Skeleton'
@@ -33,6 +34,8 @@ export default function Jobs() {
   const [page, setPage] = useState(0)
   const [showScrapeModal, setShowScrapeModal] = useState(false)
   const [scraping, setScraping] = useState(false)
+  const [compareIds, setCompareIds] = useState(new Set())
+  const [showCompare, setShowCompare] = useState(false)
   const debounceRef = useRef(null)
 
   // Debounce search input — 400ms
@@ -174,6 +177,12 @@ export default function Jobs() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {compareIds.size >= 2 && (
+            <button onClick={() => setShowCompare(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
+              <GitCompare className="w-4 h-4" /> Compare ({compareIds.size})
+            </button>
+          )}
           <a href={api.jobs.exportCsv()} download
             className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300"
             aria-label="Export jobs to CSV">
@@ -265,7 +274,19 @@ export default function Jobs() {
       ) : (
         <div className="space-y-3 sm:space-y-4">
           {jobs.map(job => (
-            <JobCard key={job._id} job={job} onApply={handleApply} onScore={handleScore} onTailor={handleTailor} onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote} />
+            <div key={job._id} className="relative">
+              <label className="absolute top-3 left-3 z-10 flex items-center gap-1.5 cursor-pointer" onClick={e => e.stopPropagation()}>
+                <input type="checkbox" checked={compareIds.has(job._id)}
+                  onChange={() => setCompareIds(prev => {
+                    const next = new Set(prev)
+                    next.has(job._id) ? next.delete(job._id) : next.size < 3 ? next.add(job._id) : null
+                    return next
+                  })}
+                  className="w-3.5 h-3.5 rounded border-gray-300 dark:border-surface-600 text-indigo-600 focus:ring-indigo-500" />
+                {compareIds.has(job._id) && <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Compare</span>}
+              </label>
+              <JobCard job={job} onApply={handleApply} onScore={handleScore} onTailor={handleTailor} onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote} />
+            </div>
           ))}
         </div>
       )}
@@ -285,6 +306,13 @@ export default function Jobs() {
             Next
           </button>
         </div>
+      )}
+
+      {showCompare && (
+        <JobComparison
+          jobs={jobs.filter(j => compareIds.has(j._id))}
+          onClose={() => setShowCompare(false)}
+        />
       )}
     </div>
   )

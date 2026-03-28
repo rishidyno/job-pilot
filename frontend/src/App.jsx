@@ -8,6 +8,7 @@
 
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { useKeyboardShortcuts, ShortcutsHelp } from './hooks/useKeyboardShortcuts'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Jobs from './pages/Jobs'
@@ -17,6 +18,7 @@ import Settings from './pages/Settings'
 import Login from './pages/Login'
 
 function ProtectedRoutes() {
+  const { showHelp, setShowHelp } = useKeyboardShortcuts()
   return (
     <Layout>
       <Routes>
@@ -27,6 +29,7 @@ function ProtectedRoutes() {
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
     </Layout>
   )
 }

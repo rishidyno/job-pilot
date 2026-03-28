@@ -224,6 +224,19 @@ export default function Settings() {
               ))}
             </div>
           )}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-surface-400">Interval:</span>
+            <input type="number" min="1" max="48" value={formData?.scrape_interval_hours ?? 6}
+              onChange={e => handleChange('scrape_interval_hours', parseInt(e.target.value))}
+              className="w-16 px-2 py-1 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded text-sm" />
+            <span className="text-xs text-gray-500 dark:text-surface-400">hours</span>
+            <button onClick={async () => {
+              try {
+                await api.settings.updateScheduler({ scrape_interval_hours: formData?.scrape_interval_hours || 6 })
+                toast.success('Scheduler updated')
+              } catch { toast.error('Failed to update scheduler') }
+            }} className="px-2 py-1 bg-brand-600 text-white text-xs rounded hover:bg-brand-700">Apply</button>
+          </div>
         </div>
 
         {/* Portal Connections */}

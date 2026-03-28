@@ -190,3 +190,32 @@ async def get_recent_activity(user_id: str = Depends(get_current_user_id)):
     activity.sort(key=lambda x: x.get("timestamp") or datetime.min, reverse=True)
 
     return {"activity": activity[:10]}
+
+
+@router.get("/salary-insights")
+async def get_salary_insights(user_id: str = Depends(get_current_user_id)):
+    """Aggregate salary data from scraped jobs."""
+    jobs_col = get_collection("jobs")
+
+    # Get jobs with salary data
+    cursor = jobs_col.find(
+        {"user_id": user_id, "salary": {"$exists": True, "$ne": ""}},
+        {"title": 1, "company": 1, "location": 1, "salary": 1, "match_score": 1}
+    ).limit(500)
+    jobs = await cursor.to_list(500)
+
+    # Get top skills demand
+    pipeline = [
+        {"$match": {"user_id": user_id, "skills": {"$exists": True, "$ne": []}}},
+        {"$unwind": "$skills"},
+        {"$group": {"_id": "$skills", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 15},
+    ]
+    skills = await jobs_col.aggregate(pipeline).to_list(15)
+
+    return {
+        "jobs_with_salary": len(jobs),
+        "salary_jobs": [{"title": j["title"], "company": j["company"], "salary": j["salary"], "score": j.get("match_score")} for j in jobs[:20]],
+        "top_skills": [{"skill": s["_id"], "count": s["count"]} for s in skills],
+    }

@@ -24,6 +24,7 @@ export default function Dashboard() {
   const { data: portals, loading: portalsLoading } = useApi(() => api.dashboard.getPortals())
   const { data: pipeline } = useApi(() => api.dashboard.getPipeline())
   const { data: activity } = useApi(() => api.dashboard.getRecentActivity())
+  const { data: salaryData } = useApi(() => api.dashboard.getSalaryInsights())
   const [scraping, setScraping] = useState(false)
   const [scrapeStatus, setScrapeStatus] = useState(null)
   const [showScrapeModal, setShowScrapeModal] = useState(false)
@@ -289,6 +290,57 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Skill Demand + Salary Insights */}
+      {salaryData && (salaryData.top_skills?.length > 0 || salaryData.salary_jobs?.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+          {/* Top Skills Demand */}
+          {salaryData.top_skills?.length > 0 && (
+            <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-surface-200 mb-4">Most Demanded Skills</h2>
+              <div className="space-y-2">
+                {salaryData.top_skills.map((s, i) => {
+                  const max = salaryData.top_skills[0]?.count || 1
+                  return (
+                    <div key={s.skill} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-500 dark:text-surface-400 w-6 text-right">{i + 1}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs font-medium text-gray-700 dark:text-surface-200">{s.skill}</span>
+                          <span className="text-xs text-gray-400 dark:text-surface-500">{s.count} jobs</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 dark:bg-surface-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-brand-500 rounded-full" style={{ width: `${(s.count / max) * 100}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Salary Data */}
+          {salaryData.salary_jobs?.length > 0 && (
+            <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-5">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-surface-200 mb-4">
+                Salary Data <span className="text-xs text-gray-400 dark:text-surface-500 font-normal">({salaryData.jobs_with_salary} jobs)</span>
+              </h2>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {salaryData.salary_jobs.map((j, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-50 dark:border-surface-700 last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-gray-700 dark:text-surface-200 truncate">{j.title}</p>
+                      <p className="text-xs text-gray-400 dark:text-surface-500">{j.company}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">{j.salary}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

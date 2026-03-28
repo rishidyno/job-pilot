@@ -4,8 +4,9 @@
  */
 
 import { useState } from 'react'
-import { ExternalLink, RotateCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { ExternalLink, RotateCw, ChevronDown, ChevronUp, LayoutGrid, List } from 'lucide-react'
 import StatusBadge from '../components/StatusBadge'
+import KanbanBoard from '../components/KanbanBoard'
 import EmptyState from '../components/EmptyState'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
@@ -18,6 +19,7 @@ const STATUS_TABS = ['all', 'pending', 'submitted', 'reviewing', 'interview', 'o
 export default function Applications() {
   const toast = useToast()
   const [activeTab, setActiveTab] = useState('all')
+  const [viewMode, setViewMode] = useState('kanban') // 'kanban' | 'list'
   const [expanded, setExpanded] = useState(null)
 
   const params = activeTab === 'all' ? {} : { status: activeTab }
@@ -48,9 +50,21 @@ export default function Applications() {
 
   return (
     <div>
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Applications</h1>
-        <p className="text-sm text-gray-500 dark:text-surface-400 mt-1">{data?.total || 0} total applications</p>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Applications</h1>
+          <p className="text-sm text-gray-500 dark:text-surface-400 mt-1">{data?.total || 0} total applications</p>
+        </div>
+        <div className="flex bg-gray-100 dark:bg-surface-700 rounded-lg p-0.5">
+          <button onClick={() => setViewMode('kanban')}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium ${viewMode === 'kanban' ? 'bg-white dark:bg-surface-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-surface-400'}`}>
+            <LayoutGrid className="w-3.5 h-3.5" /> Board
+          </button>
+          <button onClick={() => setViewMode('list')}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium ${viewMode === 'list' ? 'bg-white dark:bg-surface-600 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-surface-400'}`}>
+            <List className="w-3.5 h-3.5" /> List
+          </button>
+        </div>
       </div>
 
       {/* Status tabs — horizontally scrollable on mobile */}
@@ -69,6 +83,18 @@ export default function Applications() {
         ))}
       </div>
 
+      {/* Kanban Board View */}
+      {viewMode === 'kanban' && !loading && apps.length > 0 && (
+        <KanbanBoard applications={apps} onStatusChange={handleStatusChange} />
+      )}
+      {viewMode === 'kanban' && !loading && apps.length === 0 && (
+        <EmptyState title="No applications yet" message="Apply to jobs from the Jobs page to see them here." preset="applications" />
+      )}
+      {viewMode === 'kanban' && loading && <Skeleton.AppList />}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <>
       {/* Applications list */}
       {loading ? (
         <Skeleton.AppList />
@@ -167,6 +193,8 @@ export default function Applications() {
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   )
