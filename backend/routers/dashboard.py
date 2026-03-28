@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from database import get_collection
 from services.auth_service import get_current_user_id
-from config import settings
+from services.user_prefs import get_user_prefs
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
@@ -33,15 +33,15 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
 
+    prefs = await get_user_prefs()
     uf = {"user_id": user_id}
 
-    # Run all counts in parallel-ish (Motor handles this efficiently)
     total_jobs = await jobs_col.count_documents(uf)
     new_today = await jobs_col.count_documents({**uf, "created_at": {"$gte": today_start}})
     new_this_week = await jobs_col.count_documents({**uf, "created_at": {"$gte": week_start}})
     high_matches = await jobs_col.count_documents({
         **uf,
-        "match_score": {"$gte": settings.MIN_MATCH_SCORE_TO_APPLY},
+        "match_score": {"$gte": prefs["min_match_score"]},
         "status": {"$in": ["new", "reviewed", "shortlisted"]},
     })
 
@@ -96,12 +96,9 @@ async def get_pipeline(user_id: str = Depends(get_current_user_id)):
 
 @router.get("/portals")
 async def get_portal_stats(user_id: str = Depends(get_current_user_id)):
-    """
-    Get per-portal breakdown of jobs and applications.
-    
-    Shows which portals are yielding the most and best results.
-    """
+    """Get per-portal breakdown of jobs and applications."""
     jobs_col = get_collection("jobs")
+    prefs = await get_user_prefs()
 
     pipeline = [
         {"$match": {"user_id": user_id}},
@@ -110,7 +107,7 @@ async def get_portal_stats(user_id: str = Depends(get_current_user_id)):
             "total": {"$sum": 1},
             "avg_score": {"$avg": "$match_score"},
             "high_matches": {
-                "$sum": {"$cond": [{"$gte": ["$match_score", settings.MIN_MATCH_SCORE_TO_APPLY]}, 1, 0]}
+                "$sum": {"$cond": [{"$gte": ["$match_score", prefs["min_match_score"]]}, 1, 0]}
             },
         }},
         {"$sort": {"total": -1}},

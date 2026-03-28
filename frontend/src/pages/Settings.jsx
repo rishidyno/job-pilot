@@ -141,6 +141,32 @@ export default function Settings() {
                 onChange={e => handleChange('target_locations', e.target.value.split(',').map(s => s.trim()))}
                 className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="exp-min" className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Min Experience (years)</label>
+                <input id="exp-min" type="number" step="0.5" min="0" value={formData?.target_experience_min ?? 0}
+                  onChange={e => handleChange('target_experience_min', parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div>
+                <label htmlFor="exp-max" className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Max Experience (years)</label>
+                <input id="exp-max" type="number" step="0.5" min="0" value={formData?.target_experience_max ?? 5}
+                  onChange={e => handleChange('target_experience_max', parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="primary-skills" className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Primary Skills (comma-separated)</label>
+              <input id="primary-skills" type="text" value={(formData?.primary_skills || []).join(', ')}
+                onChange={e => handleChange('primary_skills', e.target.value.split(',').map(s => s.trim()))}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+            <div>
+              <label htmlFor="scrape-interval" className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Scrape Interval (hours)</label>
+              <input id="scrape-interval" type="number" min="1" max="48" value={formData?.scrape_interval_hours ?? 6}
+                onChange={e => handleChange('scrape_interval_hours', parseInt(e.target.value))}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
             <div>
               <label htmlFor="min-score" className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Min Match Score for Auto-Apply</label>
               <input id="min-score" type="number" min="0" max="100" value={formData?.min_match_score ?? 70}

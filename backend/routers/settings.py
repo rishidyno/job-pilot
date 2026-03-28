@@ -93,9 +93,12 @@ async def get_profile(user_id: str = Depends(get_current_user_id)):
             "target_roles": settings.target_roles_list,
             "target_locations": settings.target_locations_list,
             "primary_skills": settings.target_skills_list,
+            "target_experience_min": settings.TARGET_EXPERIENCE_MIN,
+            "target_experience_max": settings.TARGET_EXPERIENCE_MAX,
             "auto_apply_enabled": settings.AUTO_APPLY_ENABLED,
             "auto_apply_mode": settings.AUTO_APPLY_MODE,
             "min_match_score": settings.MIN_MATCH_SCORE_TO_APPLY,
+            "scrape_interval_hours": settings.SCRAPE_INTERVAL_HOURS,
             "created_at": utc_now(),
             "updated_at": utc_now(),
         }

@@ -110,7 +110,7 @@ async def trigger_scrape(portals: Optional[str] = None, user_id: str = Depends(g
     if _scrape_status["running"]:
         raise HTTPException(status_code=409, detail="Scrape already running")
 
-    target = [p.strip() for p in portals.split(",") if p.strip()] if portals else ["linkedin", "naukri", "wellfound", "instahyre", "indeed", "glassdoor"]
+    target = [p.strip() for p in portals.split(",") if p.strip()] if portals else ["linkedin", "indeed", "glassdoor", "google", "naukri"]
 
     _scrape_status.update({
         "running": True,
@@ -235,13 +235,16 @@ async def score_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     base_resume = await resumes_col.find_one({"is_base": True, "user_id": user_id})
     resume_text = base_resume.get("raw_text", "") if base_resume else ""
 
+    from services.user_prefs import get_user_prefs
+    prefs = await get_user_prefs()
+
     score_data = await job_matcher.score_job(
         job_title=job["title"], job_description=job.get("description", ""),
         job_skills=job.get("skills", []), job_location=job.get("location", ""),
         job_experience=job.get("experience_required", ""),
-        resume_text=resume_text, user_target_roles=settings.target_roles_list,
-        user_target_locations=settings.target_locations_list,
-        user_skills=settings.target_skills_list, user_experience_years=settings.TARGET_EXPERIENCE_MIN,
+        resume_text=resume_text, user_target_roles=prefs["target_roles"],
+        user_target_locations=prefs["target_locations"],
+        user_skills=prefs["primary_skills"], user_experience_years=prefs["target_experience_min"],
     )
 
     await jobs_col.update_one(
