@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 
-const ALL_PORTALS = ['linkedin', 'naukri', 'wellfound', 'instahyre', 'indeed', 'glassdoor']
+const ALL_PORTALS = ['linkedin', 'indeed', 'glassdoor', 'google', 'naukri']
 
 export default function ScrapeModal({ onScrape, onClose }) {
   const [selected, setSelected] = useState(new Set(ALL_PORTALS))
