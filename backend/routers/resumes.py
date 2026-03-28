@@ -178,11 +178,16 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
         logger.error(f"AI tailoring failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI tailoring failed: {str(e)[:200]}")
 
-    # Save tailored version
+    # Save tailored version with job context for easy reference
     resume_doc = {
         "is_base": False,
         "user_id": user_id,
         "job_id": job_id,
+        "job_title": job["title"],
+        "job_company": job["company"],
+        "job_url": job.get("url", ""),
+        "job_portal": job.get("portal", ""),
+        "job_match_score": job.get("match_score"),
         "latex_source": result["latex_source"],
         "changes_made": result.get("changes_made", []),
         "created_at": utc_now(),

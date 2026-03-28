@@ -129,26 +129,48 @@ export default function ResumeManager() {
               <div key={resume._id} className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <FileText className="w-8 h-8 text-indigo-400 shrink-0" />
+                    {/* Match score circle or fallback icon */}
+                    {resume.job_match_score != null ? (
+                      <div className="w-10 h-10 rounded-full bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-400">{resume.job_match_score}</span>
+                      </div>
+                    ) : (
+                      <FileText className="w-8 h-8 text-indigo-400 shrink-0" />
+                    )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-800 dark:text-surface-200 truncate">
-                        Tailored for Job #{resume.job_id?.slice(-6)}
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        {resume.job_title || `Job #${resume.job_id?.slice(-6)}`}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-surface-400">{timeAgo(resume.created_at)}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-xs text-gray-500 dark:text-surface-400">{resume.job_company || 'Unknown'}</span>
+                        {resume.job_portal && (
+                          <span className="text-xs text-gray-400 dark:text-surface-500">· {resume.job_portal}</span>
+                        )}
+                        <span className="text-xs text-gray-400 dark:text-surface-500">· {timeAgo(resume.created_at)}</span>
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => {
-                    setPdfTitle(`Tailored #${resume.job_id?.slice(-6)}`)
-                    setPdfUrl(api.resumes.compileUrl(resume._id))
-                  }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 text-brand-700 dark:text-brand-300 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/40 shrink-0"
-                    aria-label="View tailored resume PDF">
-                    <Eye className="w-3 h-3" /> View
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {resume.job_url && (
+                      <a href={resume.job_url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-500 dark:text-surface-400"
+                        aria-label="View original job posting">
+                        Job ↗
+                      </a>
+                    )}
+                    <button onClick={() => {
+                      setPdfTitle(`${resume.job_title || 'Resume'} — ${resume.job_company || ''}`)
+                      setPdfUrl(api.resumes.compileUrl(resume._id))
+                    }}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 text-brand-700 dark:text-brand-300 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/40"
+                      aria-label="View tailored resume PDF">
+                      <Eye className="w-3 h-3" /> View PDF
+                    </button>
+                  </div>
                 </div>
 
                 {resume.changes_made?.length > 0 && (
-                  <div className="mt-3 pl-11">
+                  <div className="mt-3 pl-12">
                     <p className="text-xs text-gray-500 dark:text-surface-400 font-medium mb-1">Changes made:</p>
                     <ul className="space-y-0.5">
                       {resume.changes_made.map((change, i) => (
