@@ -1,8 +1,9 @@
 """Auth API — register, login, get current user."""
 
+import re
 from fastapi import APIRouter, HTTPException, Depends
 from database import get_collection
-from models.user import UserCreate, UserLogin, UserResponse
+from models.user import UserCreate, UserLogin
 from services.auth_service import (
     hash_password, verify_password, create_access_token, get_current_user_id,
 )
@@ -10,17 +11,36 @@ from utils.helpers import utc_now
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
+EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+
+def _validate_registration(data: UserCreate):
+    errors = {}
+    if not data.full_name or len(data.full_name.strip()) < 2:
+        errors["full_name"] = "Name must be at least 2 characters"
+    if not EMAIL_RE.match(data.email):
+        errors["email"] = "Enter a valid email address"
+    if len(data.password) < 8:
+        errors["password"] = "Password must be at least 8 characters"
+    elif not re.search(r"[A-Z]", data.password):
+        errors["password"] = "Password needs at least one uppercase letter"
+    elif not re.search(r"[0-9]", data.password):
+        errors["password"] = "Password needs at least one number"
+    if errors:
+        raise HTTPException(status_code=422, detail={"field_errors": errors})
+
 
 @router.post("/register")
 async def register(data: UserCreate):
+    _validate_registration(data)
     users = get_collection("users")
     if await users.find_one({"email": data.email.lower()}):
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=422, detail={"field_errors": {"email": "This email is already registered"}})
 
     doc = {
-        "email": data.email.lower(),
+        "email": data.email.lower().strip(),
         "password_hash": hash_password(data.password),
-        "full_name": data.full_name,
+        "full_name": data.full_name.strip(),
         "created_at": utc_now(),
     }
     result = await users.insert_one(doc)
@@ -31,7 +51,7 @@ async def register(data: UserCreate):
 @router.post("/login")
 async def login(data: UserLogin):
     users = get_collection("users")
-    user = await users.find_one({"email": data.email.lower()})
+    user = await users.find_one({"email": data.email.lower().strip()})
     if not user or not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
