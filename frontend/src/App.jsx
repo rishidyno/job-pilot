@@ -36,8 +36,9 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-400 text-sm">Loading...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-surface-950 gap-3">
+        <div className="w-8 h-8 border-3 border-brand-200 dark:border-brand-800 border-t-brand-600 dark:border-t-brand-400 rounded-full animate-spin" />
+        <span className="text-sm text-gray-400 dark:text-surface-500">Loading JobPilot...</span>
       </div>
     )
   }

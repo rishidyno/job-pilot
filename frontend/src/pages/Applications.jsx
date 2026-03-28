@@ -73,7 +73,7 @@ export default function Applications() {
       {loading ? (
         <Skeleton.AppList />
       ) : apps.length === 0 ? (
-        <EmptyState title="No applications yet" message="Apply to jobs from the Jobs page to see them here." />
+        <EmptyState title="No applications yet" message="Apply to jobs from the Jobs page to see them here." preset="applications" />
       ) : (
         <div className="space-y-3">
           {apps.map(app => (

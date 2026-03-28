@@ -121,6 +121,7 @@ export default function ResumeManager() {
           <EmptyState
             title="No tailored resumes yet"
             message="Click 'Tailor Resume' on any job to generate a tailored version."
+            preset="resumes"
           />
         ) : (
           <div className="space-y-3">

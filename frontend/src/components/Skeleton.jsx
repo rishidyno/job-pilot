@@ -1,22 +1,17 @@
 /**
- * Skeleton loading placeholders.
- * Usage:
- *   <Skeleton className="h-4 w-32" />
- *   <Skeleton.Card />
- *   <Skeleton.StatsRow />
- *   <Skeleton.JobCard />
+ * Skeleton loading placeholders — dark mode aware.
  */
 import clsx from 'clsx'
 
-export default function Skeleton({ className }) {
-  return <div className={clsx('skeleton', className)} />
+export default function Skeleton({ className, style }) {
+  return <div className={clsx('skeleton', className)} style={style} />
 }
 
 Skeleton.StatsRow = function StatsRow({ count = 6 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-white rounded-xl border border-gray-200 p-5">
+        <div key={i} className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-3 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-8 w-8 rounded-lg" />
@@ -30,9 +25,9 @@ Skeleton.StatsRow = function StatsRow({ count = 6 }) {
 
 Skeleton.Chart = function Chart() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-5">
       <Skeleton className="h-4 w-40 mb-4" />
-      <div className="h-64 flex items-end gap-2 px-4">
+      <div className="h-52 sm:h-64 flex items-end gap-2 px-4">
         {Array.from({ length: 12 }).map((_, i) => (
           <Skeleton key={i} className="flex-1 rounded-t-md" style={{ height: `${20 + Math.random() * 60}%` }} />
         ))}
@@ -43,9 +38,9 @@ Skeleton.Chart = function Chart() {
 
 Skeleton.JobCard = function JobCard() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex items-start gap-4">
-        <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+    <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-5">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <Skeleton className="w-12 h-12 rounded-full shrink-0 hidden sm:block" />
         <div className="flex-1 space-y-2">
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-3 w-32" />
@@ -66,7 +61,7 @@ Skeleton.JobCard = function JobCard() {
 
 Skeleton.JobList = function JobList({ count = 5 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {Array.from({ length: count }).map((_, i) => <Skeleton.JobCard key={i} />)}
     </div>
   )
@@ -74,7 +69,7 @@ Skeleton.JobList = function JobList({ count = 5 }) {
 
 Skeleton.AppCard = function AppCard() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
+    <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4">
       <div className="flex items-center gap-4">
         <Skeleton className="h-6 w-20 rounded-full" />
         <div className="flex-1 space-y-1.5">
@@ -97,7 +92,7 @@ Skeleton.AppList = function AppList({ count = 5 }) {
 
 Skeleton.Settings = function SettingsBlock() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+    <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-4 sm:p-6 space-y-4">
       <Skeleton className="h-5 w-24 mb-2" />
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i}>

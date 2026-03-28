@@ -214,6 +214,9 @@ export default function Jobs() {
           message="Try adjusting your filters, or run a scrape to find new jobs."
           action="Scrape Now"
           onAction={() => setShowScrapeModal(true)}
+          preset="jobs"
+          secondaryAction="Clear Filters"
+          onSecondaryAction={() => { setStatusFilter('all'); setPortalFilter('all'); setMinScore(''); setSearch('') }}
         />
       ) : (
         <div className="space-y-3 sm:space-y-4">
