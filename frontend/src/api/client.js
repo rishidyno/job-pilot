@@ -77,6 +77,7 @@ const api = {
     addNote: (id, notes) => http.patch(`/api/jobs/${id}`, { notes }),
     exportCsv: () => '/api/jobs/export?format=csv',
     addManual: (data) => http.post('/api/jobs/manual', data),
+    fetchDetails: (url) => http.post('/api/jobs/fetch-details', { url }),
     triggerScrape: (portals = null) => http.post('/api/jobs/scrape', null, portals ? {
       params: { portals: portals.join(',') },
     } : {}),

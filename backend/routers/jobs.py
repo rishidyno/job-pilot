@@ -252,17 +252,31 @@ async def export_jobs(format: str = "csv", user_id: str = Depends(get_current_us
 
 class ManualJobInput(BaseModel):
     url: str
-    title: str
-    company: str
+    title: str = ""
+    company: str = ""
     location: Optional[str] = None
     description: Optional[str] = None
     skills: Optional[List[str]] = None
     salary: Optional[str] = None
 
 
+@router.post("/fetch-details")
+async def fetch_job_from_url(data: dict, user_id: str = Depends(get_current_user_id)):
+    """Fetch job details from a URL — extracts title, company, location, description, skills."""
+    from services.job_parser import fetch_job_details
+    url = data.get("url", "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    result = await fetch_job_details(url)
+    return result
+
+
 @router.post("/manual")
 async def add_manual_job(data: ManualJobInput, user_id: str = Depends(get_current_user_id)):
-    """Add a job manually by pasting a URL + basic info."""
+    """Add a job manually. Title and company are required."""
+    if not data.title.strip() or not data.company.strip():
+        raise HTTPException(status_code=400, detail="Title and company are required")
+
     from services.user_prefs import get_user_prefs
 
     jobs_col = get_collection("jobs")
