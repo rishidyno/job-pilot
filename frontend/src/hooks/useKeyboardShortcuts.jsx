@@ -33,7 +33,7 @@ export function useKeyboardShortcuts() {
     // Two-key combos: g + letter
     if (pending === 'g') {
       setPending(null)
-      const routes = { d: '/', j: '/jobs', a: '/applications', r: '/resumes', s: '/settings' }
+      const routes = { d: '/dashboard', j: '/jobs', a: '/applications', r: '/resumes', s: '/settings' }
       if (routes[key]) { e.preventDefault(); navigate(routes[key]) }
       return
     }

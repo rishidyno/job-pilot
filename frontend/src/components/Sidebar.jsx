@@ -11,7 +11,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/jobs', label: 'Jobs', icon: Briefcase },
   { path: '/applications', label: 'Applications', icon: Send },
   { path: '/resumes', label: 'Resumes', icon: FileText },
@@ -45,7 +45,7 @@ export default function Sidebar({ onClose }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {NAV_ITEMS.map(({ path, label, icon: Icon }) => (
-          <NavLink key={path} to={path} end={path === '/'} onClick={onClose}
+          <NavLink key={path} to={path} end={path === '/dashboard'} onClick={onClose}
             className={({ isActive }) =>
               clsx(
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium',
