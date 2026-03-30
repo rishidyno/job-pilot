@@ -111,14 +111,28 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
           </div>
         )}
 
-        {/* Row 4: Notes */}
+        {/* Row 4: Tailored resume banner */}
+        {job.tailored_resume_id && (
+          <div className="mt-2.5 flex items-center gap-2 px-3 py-2 bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900 rounded-lg"
+            onClick={e => e.stopPropagation()}>
+            <FileText className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+            <span className="text-xs text-purple-700 dark:text-purple-300 font-medium flex-1">Tailored resume ready</span>
+            <button onClick={() => setPdfUrl(api.resumes.compileUrl(job.tailored_resume_id))}
+              className="flex items-center gap-1 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 bg-white dark:bg-surface-800 px-2 py-1 rounded-md border border-purple-200 dark:border-purple-800"
+              aria-label="View tailored resume PDF">
+              <Eye className="w-3 h-3" /> View PDF
+            </button>
+          </div>
+        )}
+
+        {/* Row 5: Notes */}
         {job.notes && (
           <div className="mt-2 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/20 rounded-md" onClick={e => e.stopPropagation()}>
             <p className="text-xs text-amber-700 dark:text-amber-300 line-clamp-1">📝 {job.notes}</p>
           </div>
         )}
 
-        {/* Row 5: Actions — clean, minimal */}
+        {/* Row 6: Actions — clean, minimal */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-surface-700"
           onClick={e => e.stopPropagation()}>
           {/* Left: secondary actions */}
@@ -132,7 +146,7 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
             {onTailor && (
               <button onClick={handleTailor} disabled={tailoring}
                 className="text-xs px-2 py-1 rounded-md text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 disabled:opacity-50">
-                {tailoring ? '...' : '✎ Tailor'}
+                {tailoring ? '...' : job.tailored_resume_id ? '✎ Re-tailor' : '✎ Tailor'}
               </button>
             )}
             {onCompare && (
