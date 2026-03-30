@@ -321,8 +321,7 @@ export default function Jobs() {
       ) : (
         <div className="space-y-3 sm:space-y-4">
           {jobs.map((job, idx) => (
-            <StaggerItem key={job._id} index={idx}>
-              <JobCard job={job}
+              <JobCard key={job._id} job={job}
               onApply={handleApply} onScore={handleScore} onTailor={handleTailor}
               onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote}
               onAppStatusChange={handleAppStatusChange}
@@ -334,7 +333,6 @@ export default function Jobs() {
               isComparing={compareIds.has(job._id)}
               userSkills={userSkills}
             />
-            </StaggerItem>
           ))}
         </div>
       )}
