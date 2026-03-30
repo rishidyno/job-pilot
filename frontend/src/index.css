@@ -198,9 +198,9 @@ a, button, input, select, textarea,
 .btn-press:active { transform: scale(0.97); }
 .btn-press:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
-.card-hover { transition: transform 300ms ease, box-shadow 300ms ease; }
-.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-.dark .card-hover:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+.card-hover { transition: box-shadow 200ms ease; }
+.card-hover:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.dark .card-hover:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
 
 /* ── 2. Page transitions ── */
 @keyframes page-enter {

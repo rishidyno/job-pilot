@@ -37,7 +37,7 @@ function AppStatusSelector({ currentStatus, onChange }) {
   const current = APP_STATUSES.find(s => s.id === currentStatus) || APP_STATUSES[0]
 
   return (
-    <div className="relative" ref={ref}>
+    <div className={`relative ${open ? 'z-[60]' : ''}`} ref={ref}>
       <button onClick={() => setOpen(o => !o)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusColor(currentStatus)}`}>
         <span>{current.icon}</span>
@@ -45,7 +45,7 @@ function AppStatusSelector({ currentStatus, onChange }) {
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 shadow-xl z-30 py-1 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 shadow-xl z-[60] py-1 overflow-hidden">
           {APP_STATUSES.map(s => (
             <button key={s.id} onClick={() => { onChange(s.id); setOpen(false) }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-surface-700 transition-colors ${
