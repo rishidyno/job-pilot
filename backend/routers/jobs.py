@@ -2,8 +2,9 @@
 JOBPILOT — Jobs API Router with detailed scrape event logging.
 """
 
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Query, Depends
+from pydantic import BaseModel
 from bson import ObjectId
 from database import get_collection
 from models.job import JobUpdate, JobStatus
@@ -12,7 +13,7 @@ from services.auth_service import get_current_user_id
 from scrapers.scraper_manager import scraper_manager
 from config import settings
 from utils.logger import logger
-from utils.helpers import utc_now
+from utils.helpers import utc_now, generate_job_hash
 
 # ── In-memory scrape status tracker ──
 _scrape_status = {
@@ -247,6 +248,60 @@ async def export_jobs(format: str = "csv", user_id: str = Depends(get_current_us
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=jobpilot_jobs.csv"},
     )
+
+
+class ManualJobInput(BaseModel):
+    url: str
+    title: str
+    company: str
+    location: Optional[str] = None
+    description: Optional[str] = None
+    skills: Optional[List[str]] = None
+    salary: Optional[str] = None
+
+
+@router.post("/manual")
+async def add_manual_job(data: ManualJobInput, user_id: str = Depends(get_current_user_id)):
+    """Add a job manually by pasting a URL + basic info."""
+    from services.user_prefs import get_user_prefs
+
+    jobs_col = get_collection("jobs")
+    prefs = await get_user_prefs()
+
+    # Quick score
+    quick_score = await job_matcher.quick_score(
+        job_title=data.title,
+        job_skills=data.skills or [],
+        job_location=data.location or "",
+        user_skills=prefs["primary_skills"],
+        user_target_locations=prefs["target_locations"],
+    )
+
+    job_doc = {
+        "title": data.title.strip(),
+        "company": data.company.strip(),
+        "url": data.url.strip(),
+        "portal": "manual",
+        "external_id": generate_job_hash("manual", data.url),
+        "job_hash": generate_job_hash("manual", data.url),
+        "location": data.location or "",
+        "description": data.description or "",
+        "skills": data.skills or [],
+        "salary": data.salary or "",
+        "match_score": quick_score,
+        "status": "new",
+        "is_manual": True,
+        "user_id": user_id,
+        "created_at": utc_now(),
+        "updated_at": utc_now(),
+    }
+
+    try:
+        result = await jobs_col.insert_one(job_doc)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Job with this URL already exists")
+
+    return {"success": True, "job_id": str(result.inserted_id), "match_score": quick_score}
 
 
 @router.delete("/{job_id}")

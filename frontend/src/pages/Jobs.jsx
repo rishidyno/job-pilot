@@ -7,6 +7,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { Search, Loader2, Keyboard, GitCompare } from 'lucide-react'
 import JobCard from '../components/JobCard'
 import JobComparison from '../components/JobComparison'
+import AddJobModal from '../components/AddJobModal'
 import EmptyState from '../components/EmptyState'
 import ScrapeModal from '../components/ScrapeModal'
 import Skeleton from '../components/Skeleton'
@@ -15,7 +16,7 @@ import { useApi, useApiMutation } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 
 const STATUS_OPTIONS = ['all', 'new', 'reviewed', 'shortlisted', 'applied', 'interviewing', 'rejected', 'skipped']
-const PORTAL_OPTIONS = ['all', 'linkedin', 'indeed', 'glassdoor', 'google', 'naukri']
+const PORTAL_OPTIONS = ['all', 'linkedin', 'indeed', 'glassdoor', 'google', 'naukri', 'manual']
 const SORT_OPTIONS = [
   { value: 'match_score', label: 'Match Score' },
   { value: 'created_at', label: 'Date Found' },
@@ -33,6 +34,7 @@ export default function Jobs() {
   const [sortBy, setSortBy] = useState('match_score')
   const [page, setPage] = useState(0)
   const [showScrapeModal, setShowScrapeModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [scraping, setScraping] = useState(false)
   const [compareIds, setCompareIds] = useState(new Set())
   const [showCompare, setShowCompare] = useState(false)
@@ -166,6 +168,17 @@ export default function Jobs() {
     }
   }
 
+  const handleAddManual = async (data) => {
+    try {
+      const result = await api.jobs.addManual(data)
+      toast.success(`Job added — score: ${result.data.match_score}/100`)
+      refetch()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add job')
+      throw err
+    }
+  }
+
   const jobs = data?.jobs || []
   const total = data?.total || 0
 
@@ -199,6 +212,11 @@ export default function Jobs() {
             aria-label="Export jobs to CSV">
             ↓ Export
           </a>
+          <button onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm border border-brand-200 dark:border-brand-800 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-950/30 text-brand-600 dark:text-brand-400 font-medium"
+            aria-label="Add job manually">
+            + Add Job
+          </button>
           <button onClick={() => setShowScrapeModal(true)} disabled={scraping}
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50"
             aria-label="Start scraping jobs">
@@ -211,6 +229,9 @@ export default function Jobs() {
 
       {showScrapeModal && (
         <ScrapeModal onScrape={handleScrape} onClose={() => setShowScrapeModal(false)} />
+      )}
+      {showAddModal && (
+        <AddJobModal onAdd={handleAddManual} onClose={() => setShowAddModal(false)} />
       )}
 
       {/* Filters bar */}

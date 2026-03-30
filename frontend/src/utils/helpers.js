@@ -69,6 +69,7 @@ const PORTALS = {
   indeed: { label: 'Indeed', color: 'text-purple-600 dark:text-purple-400' },
   glassdoor: { label: 'Glassdoor', color: 'text-green-600 dark:text-green-400' },
   google: { label: 'Google', color: 'text-orange-500 dark:text-orange-400' },
+  manual: { label: 'Manual', color: 'text-amber-600 dark:text-amber-400' },
 }
 
 /** Get portal display label */

@@ -66,6 +66,7 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
               <span className="font-medium text-gray-700 dark:text-surface-300">{job.company}</span>
               <span>·</span>
               <span className={portalColor(job.portal)}>{portalLabel(job.portal)}</span>
+              {(job.is_manual || job.portal === 'manual') && <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded">📌 Manual</span>}
               {job.location && <><span>·</span><span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{job.location}</span></>}
               {job.is_remote && <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400"><Wifi className="w-3 h-3" />Remote</span>}
             </div>

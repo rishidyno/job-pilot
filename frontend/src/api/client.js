@@ -76,6 +76,7 @@ const api = {
     bookmark: (id, bookmarked) => http.patch(`/api/jobs/${id}`, { bookmarked }),
     addNote: (id, notes) => http.patch(`/api/jobs/${id}`, { notes }),
     exportCsv: () => '/api/jobs/export?format=csv',
+    addManual: (data) => http.post('/api/jobs/manual', data),
     triggerScrape: (portals = null) => http.post('/api/jobs/scrape', null, portals ? {
       params: { portals: portals.join(',') },
     } : {}),
