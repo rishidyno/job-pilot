@@ -13,6 +13,7 @@ Returns immediately      scraper_manager.scrape_all()
 (UI starts polling)              │
         │                        ▼
         │               Load user preferences from MongoDB
+        │               (get_user_prefs(user_id))
         │                        │
         │                        ▼
         │               Expand keywords (synonyms)
@@ -35,7 +36,35 @@ GET /api/jobs/scrape/status     Scrape complete
 (polls every 2 seconds)
 ```
 
-## 2. Resume Tailoring Flow
+## 2. Manual Job Add Flow
+
+```
+User clicks "+ Add Job" on Jobs page
+        │
+        ▼
+Pastes URL → clicks "Fetch"
+        │
+        ▼
+POST /api/jobs/fetch-details
+        │
+        ▼
+job_parser.py fetches URL with httpx
+        │
+        ├── Try LD+JSON JobPosting schema (Ashby, Greenhouse, Lever)
+        ├── Try OpenGraph meta tags (LinkedIn, career pages)
+        └── Try <title> tag with platform-specific regex
+        │
+        ▼
+Returns: title, company, location, description, skills
+        │
+        ▼
+Form pre-filled → user reviews → clicks "Add Job"
+        │
+        ▼
+POST /api/jobs/manual → quick score → MongoDB
+```
+
+## 3. Resume Tailoring Flow
 
 ```
 User clicks "Tailor" on a job card
@@ -44,15 +73,16 @@ User clicks "Tailor" on a job card
 POST /api/resumes/tailor?job_id=xxx
         │
         ▼
-Fetch base LaTeX resume from MongoDB
-        │
-        ▼
-Fetch job description + skills
+Fetch: base LaTeX + job description + rules_md + profile_md
+(all per-user from MongoDB)
         │
         ▼
 Send to Kiro CLI (Claude):
-  - Base LaTeX + JD + rules.md + profile.md
-  - "Modify this LaTeX for this job"
+  - System prompt (tailor instructions)
+  - Job: title, company, skills, description
+  - Rules: user's AI rules from MongoDB
+  - Profile: user's candidate profile from MongoDB
+  - LaTeX: full resume source
         │
         ▼
 AI returns modified LaTeX + changes list
@@ -68,7 +98,7 @@ Re-score the job (quick_score + 5 boost)
 Return resume_id + changes + new_score
 ```
 
-## 3. Authentication Flow
+## 4. Authentication Flow
 
 ```
 Register: POST /api/auth/register
@@ -87,29 +117,31 @@ Login: POST /api/auth/login
 Every API call:
   ├── Frontend: Axios interceptor adds Bearer token
   ├── Backend: Depends(get_current_user_id) validates JWT
-  └── Extracts user_id for data isolation
+  └── Extracts user_id — all queries filtered by user_id
 ```
 
-## 4. Application Tracking Flow
+## 5. Application Tracking Flow
 
 ```
-User clicks "Apply" on a job
+User clicks "Apply" on a job card
         │
         ▼
 POST /api/applications?job_id=xxx
         │
         ▼
 Create application record in MongoDB
-  (status: pending, job context, timestamp)
         │
         ▼
 Update job status to "applied"
         │
         ▼
-Return job URL for manual application
+Job card shows status dropdown (replaces Apply button)
         │
         ▼
-User tracks progress via Kanban board:
+User changes status via dropdown OR Kanban drag-and-drop:
   Pending → Applied → Interview → Offered → Accepted
-  (drag and drop updates status via PATCH)
+  (both update same applications collection)
+        │
+        ▼
+If status → "Offered" or "Accepted": confetti burst 🎉
 ```

@@ -18,11 +18,13 @@ All endpoints except `/api/auth/register` and `/api/auth/login` require a Bearer
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/jobs` | List jobs (filters: status, portal, bookmarked, min_score, search) |
-| GET | `/api/jobs/{id}` | Get single job |
+| GET | `/api/jobs/{id}` | Get single job (includes application_id, application_status) |
 | PATCH | `/api/jobs/{id}` | Update job (status, notes, bookmarked) |
 | DELETE | `/api/jobs/{id}` | Delete job |
 | POST | `/api/jobs/{id}/score` | Re-score with AI |
 | GET | `/api/jobs/export` | Download all jobs as CSV |
+| POST | `/api/jobs/manual` | Add job manually (URL + title + company) |
+| POST | `/api/jobs/fetch-details` | Extract job details from any URL |
 | POST | `/api/jobs/scrape` | Trigger scrape (optional: portals param) |
 | GET | `/api/jobs/scrape/status` | Live scrape status + logs |
 | POST | `/api/jobs/scrape/stop` | Stop running scrape |
@@ -68,9 +70,9 @@ All endpoints except `/api/auth/register` and `/api/auth/login` require a Bearer
 | PUT | `/api/settings/profile` | Update profile + preferences |
 | GET | `/api/settings/scheduler` | Scheduler status |
 | POST | `/api/settings/scheduler` | Update scrape interval |
-| GET | `/api/settings/portals` | Portal connection status |
-| GET | `/api/settings/rules` | Get AI rules (markdown) |
+| GET | `/api/settings/portals` | Supported portals (all public, no credentials) |
+| GET | `/api/settings/rules` | Get AI rules (per-user, stored in MongoDB) |
 | PUT | `/api/settings/rules` | Update AI rules |
-| GET | `/api/settings/profile-md` | Get candidate profile (markdown) |
+| GET | `/api/settings/profile-md` | Get candidate profile (per-user, stored in MongoDB) |
 | PUT | `/api/settings/profile-md` | Update candidate profile |
 | GET | `/api/settings/health` | Health check |

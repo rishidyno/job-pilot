@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:5173`. API requests proxy to the backend at `http://localhost:8000`.
+Opens at `http://localhost:5173`. Accessible from phone on same WiFi. API requests proxy to `http://127.0.0.1:8000`.
 
 ## Structure
 
@@ -17,27 +17,31 @@ Opens at `http://localhost:5173`. API requests proxy to the backend at `http://l
 frontend/src/
 ├── main.jsx                # Entry point (providers: Auth, Toast, Theme, Router)
 ├── App.jsx                 # Route protection, keyboard shortcuts
-├── index.css               # Tailwind + prose styles + animations
+├── index.css               # Tailwind + themes + animations
 │
 ├── pages/
-│   ├── Login.jsx           # Split-screen auth with password strength
+│   ├── Home.jsx            # Public landing page (animated, scroll reveals)
+│   ├── Login.jsx           # Auth with password strength, dark animated
 │   ├── Dashboard.jsx       # Stats, charts, scrape monitor, salary insights
-│   ├── Jobs.jsx            # Job browser with filters, compare, export
-│   ├── Applications.jsx    # Kanban board + list view toggle
+│   ├── Jobs.jsx            # Job browser with filters, compare, export, manual add
+│   ├── Applications.jsx    # Kanban board + list view, confetti on offers
 │   ├── ResumeManager.jsx   # LaTeX editor, PDF preview, tailored versions
-│   └── Settings.jsx        # Profile, preferences, rules editor, scheduler
+│   └── Settings.jsx        # Profile, preferences, markdown editors, scheduler
 │
 ├── components/
 │   ├── Layout.jsx          # App shell (sidebar + mobile nav)
-│   ├── Sidebar.jsx         # Navigation + dark mode toggle + logout
-│   ├── JobCard.jsx         # Job listing card (score, skills, salary, freshness)
+│   ├── Sidebar.jsx         # Navigation + 6-theme picker + logout
+│   ├── JobCard.jsx         # Job card (score, skills match, salary, status selector)
 │   ├── JobDetailModal.jsx  # Full job view with actions
 │   ├── JobComparison.jsx   # Side-by-side job comparison table
+│   ├── AddJobModal.jsx     # Paste URL → auto-fetch → review → add
 │   ├── KanbanBoard.jsx     # Drag-and-drop application pipeline
 │   ├── MarkdownEditor.jsx  # Edit/preview toggle + fullscreen
 │   ├── PdfViewer.jsx       # PDF viewer modal with zoom
+│   ├── Animations.jsx      # PageWrapper, ScrollProgress
+│   ├── Confetti.jsx        # Celebration particles on offers
 │   ├── MatchScore.jsx      # Circular score ring
-│   ├── StatsCard.jsx       # Dashboard metric card
+│   ├── StatsCard.jsx       # Dashboard metric card with hover lift
 │   ├── StatusBadge.jsx     # Colored status pill
 │   ├── ScrapeModal.jsx     # Portal selector for scraping
 │   ├── OnboardingModal.jsx # 4-step new user walkthrough
@@ -49,8 +53,8 @@ frontend/src/
 │   ├── useAuth.jsx         # Auth context (login, register, logout, token)
 │   ├── useApi.js           # Data fetching with loading/error states
 │   ├── useToast.jsx        # Toast notification system
-│   ├── useTheme.jsx        # Dark/light mode toggle
-│   ├── useKeyboardShortcuts.jsx  # Global keyboard shortcuts + help modal
+│   ├── useTheme.jsx        # 6 themes (Light, Dark, Midnight, Nord, Sunset, Emerald)
+│   ├── useKeyboardShortcuts.jsx  # Global shortcuts + help modal
 │   └── useFocusTrap.js     # Accessible focus trapping for modals
 │
 ├── api/
@@ -60,20 +64,35 @@ frontend/src/
     └── helpers.js          # timeAgo, scoreColor, scoreLabel, freshness, portalLabel
 ```
 
+## Routes
+
+| Path | Auth | Page |
+|------|------|------|
+| `/` | Public | Animated landing page |
+| `/login` | Public | Login / Register |
+| `/dashboard` | Required | Dashboard with stats and charts |
+| `/jobs` | Required | Job browser |
+| `/applications` | Required | Kanban board |
+| `/resumes` | Required | LaTeX editor + tailored versions |
+| `/settings` | Required | Profile, preferences, AI rules |
+
 ## Key Features
 
 | Feature | Implementation |
 |---------|---------------|
-| **Dark mode** | `useTheme` hook + Tailwind `dark:` classes |
-| **Auth** | JWT stored in localStorage, auto-refresh on mount |
+| **6 Themes** | Light, Dark, Midnight, Nord, Sunset, Emerald via CSS variables |
+| **Auth** | JWT in localStorage, auto-refresh on mount |
 | **Keyboard shortcuts** | `g+d/j/a/r/s` navigation, `/` search, `?` help |
-| **Scrape monitor** | Polls `/api/jobs/scrape/status` every 2s, live log feed |
-| **Kanban board** | HTML drag-and-drop API, no external library |
+| **Scrape monitor** | Polls status every 2s, live log feed |
+| **Kanban board** | HTML drag-and-drop, no external library |
 | **Job comparison** | Select up to 3 jobs, side-by-side table |
-| **Skill matching** | Compares job skills against user's profile skills |
-| **PDF preview** | iframe-based with zoom controls |
-| **Markdown editor** | react-markdown for preview, monospace textarea for edit |
-| **Toast system** | Context-based, animated, auto-dismiss |
+| **Skill matching** | Compares job skills against user's profile |
+| **Manual job add** | Paste URL → auto-extract title/company/skills |
+| **App status on card** | Dropdown selector syncs with Kanban |
+| **PDF preview** | iframe with zoom controls |
+| **Markdown editor** | react-markdown preview, fullscreen mode |
+| **Confetti** | Celebration burst on Offered/Accepted status |
+| **Page transitions** | Fade-in on mount, scroll progress bar |
 
 ## Dependencies
 

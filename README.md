@@ -93,11 +93,14 @@ Powered by [python-jobspy](https://github.com/speedyapply/JobSpy). No login cred
 - **Portal status** — see which portals are connected
 
 ### 🎨 UI/UX
-- **Dark mode** — full dark theme support
-- **Responsive** — works on desktop and mobile
+- **6 Themes** — Light, Dark, Midnight, Nord, Sunset, Emerald
+- **Animated landing page** — floating orbs, scroll reveals, typing effect
+- **Responsive** — works on desktop and mobile (accessible via WiFi from phone)
 - **Keyboard shortcuts** — `g+j` for Jobs, `/` for search, `?` for help
 - **Onboarding** — 4-step walkthrough for new users
 - **Toast notifications** — replaces all alert() calls
+- **Confetti** — celebration burst when status changes to Offered/Accepted
+- **Page transitions** — fade-in on mount, scroll progress bar
 - **Skeleton loading** — smooth loading states everywhere
 - **Focus trapping** — accessible modals
 
@@ -198,15 +201,16 @@ job-pilot/
 │   │   ├── ai_service.py       # Kiro CLI integration
 │   │   ├── resume_tailor.py    # AI resume tailoring
 │   │   ├── job_matcher.py      # Scoring algorithm
-│   │   └── user_prefs.py       # User preferences from DB
+│   │   ├── job_parser.py       # URL parser for manual job add
+│   │   └── user_prefs.py       # Per-user preferences from DB
 │   ├── scrapers/
 │   │   └── scraper_manager.py  # python-jobspy wrapper
 │   └── schedulers/
 │       └── job_scheduler.py    # APScheduler setup
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/              # Dashboard, Jobs, Applications, Resumes, Settings, Login
-│   │   ├── components/         # JobCard, KanbanBoard, MarkdownEditor, PdfViewer, etc.
+│   │   ├── pages/              # Home, Dashboard, Jobs, Applications, Resumes, Settings, Login
+│   │   ├── components/         # JobCard, KanbanBoard, MarkdownEditor, PdfViewer, AddJobModal, etc.
 │   │   ├── hooks/              # useAuth, useApi, useToast, useTheme, useKeyboardShortcuts
 │   │   └── api/client.js       # Axios API client
 │   └── tailwind.config.js
@@ -244,6 +248,8 @@ Full interactive docs at `http://localhost:8000/docs` (Swagger UI).
 | `/api/jobs` | GET | List jobs (filters, pagination) |
 | `/api/jobs/scrape` | POST | Trigger scrape |
 | `/api/jobs/scrape/status` | GET | Live scrape status |
+| `/api/jobs/manual` | POST | Add job manually (paste URL) |
+| `/api/jobs/fetch-details` | POST | Extract job details from URL |
 | `/api/jobs/export` | GET | Download CSV |
 | `/api/resumes/latex` | GET/PUT | Read/write LaTeX source |
 | `/api/resumes/compile/:id` | GET | Compile LaTeX → PDF |
