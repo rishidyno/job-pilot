@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Search, Loader2, Keyboard, GitCompare } from 'lucide-react'
+import { Search, Loader2, Keyboard, GitCompare, Bookmark } from 'lucide-react'
 import JobCard from '../components/JobCard'
 import JobComparison from '../components/JobComparison'
 import AddJobModal from '../components/AddJobModal'
@@ -297,7 +297,7 @@ export default function Jobs() {
                   ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
                   : 'bg-gray-50 dark:bg-surface-700 border-gray-200 dark:border-surface-700 text-gray-500 dark:text-surface-400'
               }`} aria-label="Filter bookmarked jobs" aria-pressed={bookmarkFilter}>
-              ★ Saved
+              <Bookmark className={`w-3.5 h-3.5 ${bookmarkFilter ? 'fill-amber-400' : ''}`} /> Bookmarked
             </button>
           </div>
         </div>
