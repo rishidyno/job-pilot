@@ -98,7 +98,7 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
 
   return (
     <>
-      <div className={`bg-white dark:bg-surface-800 rounded-xl border p-4 sm:p-5 hover:shadow-md dark:hover:shadow-surface-900/50 transition-all cursor-pointer ${
+      <div className={`card-hover bg-white dark:bg-surface-800 rounded-xl border p-4 sm:p-5 cursor-pointer ${
           isComparing ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-surface-700'
         }`}
         onClick={() => setShowDetail(true)} role="button" tabIndex={0}

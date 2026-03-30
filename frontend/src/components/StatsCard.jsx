@@ -1,5 +1,5 @@
 /**
- * JOBPILOT — StatsCard Component
+ * JOBPILOT — StatsCard with hover lift + number pop animation
  */
 import clsx from 'clsx'
 
@@ -14,7 +14,7 @@ export default function StatsCard({ label, value, icon: Icon, color = 'brand', s
   }
 
   return (
-    <div className="bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-3 sm:p-5 hover:shadow-sm transition-shadow">
+    <div className="card-hover bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 p-3 sm:p-5">
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-surface-400 truncate">{label}</span>
         {Icon && (
@@ -23,7 +23,7 @@ export default function StatsCard({ label, value, icon: Icon, color = 'brand', s
           </div>
         )}
       </div>
-      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{value ?? '—'}</p>
+      <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white count-pop" key={value}>{value ?? '—'}</p>
       {subtext && <p className="text-xs text-gray-400 dark:text-surface-500 mt-1 hidden sm:block">{subtext}</p>}
     </div>
   )

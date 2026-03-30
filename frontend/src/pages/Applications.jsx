@@ -9,6 +9,8 @@ import StatusBadge from '../components/StatusBadge'
 import KanbanBoard from '../components/KanbanBoard'
 import EmptyState from '../components/EmptyState'
 import Skeleton from '../components/Skeleton'
+import Confetti from '../components/Confetti'
+import { PageWrapper } from '../components/Animations'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
@@ -21,6 +23,7 @@ export default function Applications() {
   const [activeTab, setActiveTab] = useState('all')
   const [viewMode, setViewMode] = useState('kanban') // 'kanban' | 'list'
   const [expanded, setExpanded] = useState(null)
+  const [confetti, setConfetti] = useState(0)
 
   const params = activeTab === 'all' ? {} : { status: activeTab }
   const { data, loading, refetch } = useApi(() => api.applications.list(params), [activeTab])
@@ -30,6 +33,7 @@ export default function Applications() {
     try {
       await execute(() => api.applications.update(appId, { status: newStatus }))
       toast.success(`Status updated to ${newStatus}`)
+      if (newStatus === 'offered' || newStatus === 'accepted') setConfetti(c => c + 1)
       refetch()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Update failed')
@@ -49,7 +53,8 @@ export default function Applications() {
   const apps = data?.applications || []
 
   return (
-    <div>
+    <PageWrapper>
+      <Confetti trigger={confetti} />
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Applications</h1>
@@ -196,6 +201,6 @@ export default function Applications() {
       )}
         </>
       )}
-    </div>
+    </PageWrapper>
   )
 }

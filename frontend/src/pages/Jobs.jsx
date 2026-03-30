@@ -11,6 +11,7 @@ import AddJobModal from '../components/AddJobModal'
 import EmptyState from '../components/EmptyState'
 import ScrapeModal from '../components/ScrapeModal'
 import Skeleton from '../components/Skeleton'
+import { PageWrapper, StaggerItem, ScrollProgress } from '../components/Animations'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
@@ -196,7 +197,8 @@ export default function Jobs() {
   const total = data?.total || 0
 
   return (
-    <div>
+    <PageWrapper>
+      <ScrollProgress />
       {/* Page header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
@@ -318,8 +320,9 @@ export default function Jobs() {
         />
       ) : (
         <div className="space-y-3 sm:space-y-4">
-          {jobs.map(job => (
-            <JobCard key={job._id} job={job}
+          {jobs.map((job, idx) => (
+            <StaggerItem key={job._id} index={idx}>
+              <JobCard job={job}
               onApply={handleApply} onScore={handleScore} onTailor={handleTailor}
               onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote}
               onAppStatusChange={handleAppStatusChange}
@@ -331,6 +334,7 @@ export default function Jobs() {
               isComparing={compareIds.has(job._id)}
               userSkills={userSkills}
             />
+            </StaggerItem>
           ))}
         </div>
       )}
@@ -358,6 +362,6 @@ export default function Jobs() {
           onClose={() => setShowCompare(false)}
         />
       )}
-    </div>
+    </PageWrapper>
   )
 }

@@ -49,7 +49,7 @@ export default function OnboardingModal({ onClose }) {
   const isLast = step === STEPS.length - 1
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4"
+    <div className="fixed inset-0 glass-overlay z-[70] flex items-center justify-center p-4"
       role="dialog" aria-modal="true" aria-label="Welcome onboarding">
       <div className="bg-white dark:bg-surface-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
         {/* Progress bar */}

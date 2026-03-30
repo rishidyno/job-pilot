@@ -10,6 +10,7 @@ import StatusBadge from '../components/StatusBadge'
 import ScrapeModal from '../components/ScrapeModal'
 import OnboardingModal from '../components/OnboardingModal'
 import Skeleton from '../components/Skeleton'
+import { PageWrapper, StaggerItem, ScrollProgress } from '../components/Animations'
 import api from '../api/client'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
@@ -86,11 +87,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
+    <PageWrapper>
+      <ScrollProgress />
       {/* Header */}
       <div className="flex items-center justify-between mb-6 sm:mb-8">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            <span className="text-gradient">Dashboard</span>
+          </h1>
           <p className="text-sm text-gray-500 dark:text-surface-400 mt-1 hidden sm:block">Your job search at a glance</p>
         </div>
         <div className="flex items-center gap-2">
@@ -341,6 +345,6 @@ export default function Dashboard() {
           )}
         </div>
       )}
-    </div>
+    </PageWrapper>
   )
 }

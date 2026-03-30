@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { FileText, Sparkles, Eye, Save, Check } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import PdfViewer from '../components/PdfViewer'
+import { PageWrapper } from '../components/Animations'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
@@ -50,7 +51,7 @@ export default function ResumeManager() {
   const tailoredResumes = (listData?.resumes || []).filter(r => !r.is_base)
 
   return (
-    <div>
+    <PageWrapper>
       <div className="mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Resume Manager</h1>
         <p className="text-sm text-gray-500 dark:text-surface-400 mt-1">Edit your LaTeX resume and view tailored versions</p>
@@ -190,6 +191,6 @@ export default function ResumeManager() {
       {pdfUrl && (
         <PdfViewer url={pdfUrl} title={pdfTitle} onClose={() => setPdfUrl(null)} />
       )}
-    </div>
+    </PageWrapper>
   )
 }

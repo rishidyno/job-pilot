@@ -22,7 +22,7 @@ export default function PdfViewer({ url, title, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       role="dialog" aria-modal="true" aria-label={`PDF viewer: ${title}`}>
       <div className={`bg-white dark:bg-surface-800 flex flex-col ${
         fullscreen ? 'w-full h-full rounded-none' : 'w-full h-[85vh] sm:h-[90vh] sm:max-w-5xl rounded-t-2xl sm:rounded-xl'

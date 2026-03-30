@@ -28,7 +28,7 @@ export default function JobDetailModal({ job, onClose, onApply, onScore, onTailo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose} role="dialog" aria-modal="true" aria-label={`Job details: ${job.title}`}>
       <div className="bg-white dark:bg-surface-800 rounded-t-2xl sm:rounded-xl w-full sm:max-w-2xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}>

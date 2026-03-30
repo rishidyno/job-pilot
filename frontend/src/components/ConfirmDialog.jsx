@@ -20,7 +20,7 @@ export default function ConfirmDialog({ title, message, confirmLabel = 'Confirm'
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4"
+    <div className="fixed inset-0 glass-overlay z-[60] flex items-center justify-center p-4"
       onClick={onCancel} role="dialog" aria-modal="true" aria-label={title}>
       <div ref={trapRef}
         className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-sm p-5 shadow-xl"

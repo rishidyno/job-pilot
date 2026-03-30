@@ -64,7 +64,7 @@ export default function AddJobModal({ onAdd, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose} role="dialog" aria-modal="true" aria-label="Add job manually">
       <div className="bg-white dark:bg-surface-800 rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>

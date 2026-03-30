@@ -23,7 +23,7 @@ export default function ScrapeModal({ onScrape, onClose }) {
   })
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose} role="dialog" aria-modal="true" aria-label="Select portals to scrape">
       <div ref={modalRef} tabIndex={-1}
         className="bg-white dark:bg-surface-800 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm p-5 sm:p-6 outline-none"

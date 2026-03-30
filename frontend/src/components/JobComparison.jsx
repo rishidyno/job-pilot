@@ -29,7 +29,7 @@ export default function JobComparison({ jobs, onClose }) {
   if (!jobs || jobs.length < 2) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-700 shrink-0">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Compare Jobs</h2>

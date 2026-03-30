@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { Save, CheckCircle, XCircle, Clock, Zap, FileText, User } from 'lucide-react'
 import MarkdownEditor from '../components/MarkdownEditor'
+import { PageWrapper } from '../components/Animations'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
@@ -88,7 +89,7 @@ export default function Settings() {
   }
 
   return (
-    <div>
+    <PageWrapper>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
@@ -301,6 +302,6 @@ export default function Settings() {
           </p>
         </div>
       )}
-    </div>
+    </PageWrapper>
   )
 }

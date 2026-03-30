@@ -108,7 +108,7 @@ export default function MarkdownEditor({ value, onChange, onSave, saving, label,
   // Fullscreen modal
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-6"
+      <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-3 sm:p-6"
         role="dialog" aria-modal="true" aria-label={`${label} — fullscreen editor`}>
         <div className="bg-white dark:bg-surface-800 rounded-xl w-full h-full max-w-5xl flex flex-col p-4 sm:p-6 shadow-2xl">
           {toolbar}
