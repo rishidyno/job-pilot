@@ -37,6 +37,7 @@ After the complete LaTeX, add a line "%%CHANGES%%" followed by a brief list of w
         job_description: str,
         job_skills: list,
         company_name: str,
+        user_id: str = None,
     ) -> dict:
         # Build a rich prompt with all available context
         parts = []
@@ -52,7 +53,7 @@ Description:
 
         # Include tailoring rules if available (from user's MongoDB profile)
         from services.user_prefs import get_user_prefs
-        prefs = await get_user_prefs()
+        prefs = await get_user_prefs(user_id) if user_id else {}
         rules = prefs.get("rules_md", "")
         if rules:
             parts.append(f"=== TAILORING RULES (follow these strictly) ===\n{rules[:4000]}")

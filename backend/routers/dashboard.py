@@ -33,7 +33,7 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
 
-    prefs = await get_user_prefs()
+    prefs = await get_user_prefs(user_id)
     uf = {"user_id": user_id}
 
     total_jobs = await jobs_col.count_documents(uf)
@@ -98,7 +98,7 @@ async def get_pipeline(user_id: str = Depends(get_current_user_id)):
 async def get_portal_stats(user_id: str = Depends(get_current_user_id)):
     """Get per-portal breakdown of jobs and applications."""
     jobs_col = get_collection("jobs")
-    prefs = await get_user_prefs()
+    prefs = await get_user_prefs(user_id)
 
     pipeline = [
         {"$match": {"user_id": user_id}},

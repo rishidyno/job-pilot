@@ -304,7 +304,7 @@ async def add_manual_job(data: ManualJobInput, user_id: str = Depends(get_curren
     from services.user_prefs import get_user_prefs
 
     jobs_col = get_collection("jobs")
-    prefs = await get_user_prefs()
+    prefs = await get_user_prefs(user_id)
 
     # Quick score
     quick_score = await job_matcher.quick_score(
@@ -374,7 +374,7 @@ async def score_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     resume_text = base_resume.get("raw_text", "") if base_resume else ""
 
     from services.user_prefs import get_user_prefs
-    prefs = await get_user_prefs()
+    prefs = await get_user_prefs(user_id)
 
     score_data = await job_matcher.score_job(
         job_title=job["title"], job_description=job.get("description", ""),

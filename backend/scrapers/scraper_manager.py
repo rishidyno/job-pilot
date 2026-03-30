@@ -107,7 +107,7 @@ class ScraperManager:
         emit = on_event or (lambda *a: None)
         portal_stats = {"found": 0, "new": 0, "duplicates": 0, "errors": 0, "high_matches": 0}
 
-        prefs = await get_user_prefs()
+        prefs = await get_user_prefs(user_id) if user_id else {}
         keywords = _expand_keywords(prefs["target_roles"])
         locations = prefs["target_locations"]
         # Use first location as primary (jobspy takes a single location string)

@@ -182,6 +182,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
             job_description=description,
             job_skills=skills,
             company_name=job["company"],
+            user_id=user_id,
         )
     except Exception as e:
         logger.error(f"AI tailoring failed: {e}")
@@ -205,7 +206,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
 
     # Re-score the job now that we have a tailored resume
     from services.user_prefs import get_user_prefs
-    prefs = await get_user_prefs()
+    prefs = await get_user_prefs(user_id)
     new_score = await job_matcher.quick_score(
         job_title=job["title"],
         job_skills=skills or [],
