@@ -93,7 +93,14 @@ async def list_jobs(
     if min_score is not None:
         query["match_score"] = {"$gte": min_score}
     if search:
-        query["$text"] = {"$search": search}
+        pattern = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"title": pattern},
+            {"company": pattern},
+            {"skills": pattern},
+            {"location": pattern},
+            {"description": pattern},
+        ]
 
     sort_dir = -1 if sort_order == "desc" else 1
     cursor = jobs_col.find(query).sort(sort_by, sort_dir).skip(skip).limit(limit)
