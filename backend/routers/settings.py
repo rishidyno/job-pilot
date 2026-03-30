@@ -189,43 +189,14 @@ async def update_scheduler(data: dict, user_id: str = Depends(get_current_user_i
 
 @router.get("/portals")
 async def get_portal_status(user_id: str = Depends(get_current_user_id)):
-    """
-    Get connection status for all supported portals.
-    Shows which portals have credentials configured.
-    """
+    """Get supported portals. All use public APIs — no credentials needed."""
     portals = {
-        "linkedin": {
-            "name": "LinkedIn",
-            "configured": bool(settings.LINKEDIN_EMAIL and settings.LINKEDIN_PASSWORD),
-            "features": ["scraping", "easy_apply"],
-        },
-        "naukri": {
-            "name": "Naukri",
-            "configured": bool(settings.NAUKRI_EMAIL and settings.NAUKRI_PASSWORD),
-            "features": ["scraping", "auto_apply"],
-        },
-        "wellfound": {
-            "name": "Wellfound",
-            "configured": bool(settings.WELLFOUND_EMAIL and settings.WELLFOUND_PASSWORD),
-            "features": ["scraping", "auto_apply"],
-        },
-        "instahyre": {
-            "name": "Instahyre",
-            "configured": bool(settings.INSTAHYRE_EMAIL and settings.INSTAHYRE_PASSWORD),
-            "features": ["scraping", "auto_apply"],
-        },
-        "indeed": {
-            "name": "Indeed",
-            "configured": True,  # Works without login
-            "features": ["scraping"],
-        },
-        "glassdoor": {
-            "name": "Glassdoor",
-            "configured": bool(settings.GLASSDOOR_EMAIL and settings.GLASSDOOR_PASSWORD),
-            "features": ["scraping"],
-        },
+        "linkedin": {"name": "LinkedIn", "configured": True, "features": ["scraping"]},
+        "indeed": {"name": "Indeed", "configured": True, "features": ["scraping"]},
+        "glassdoor": {"name": "Glassdoor", "configured": True, "features": ["scraping"]},
+        "google": {"name": "Google Jobs", "configured": True, "features": ["scraping"]},
+        "naukri": {"name": "Naukri", "configured": True, "features": ["scraping"]},
     }
-
     return {"portals": portals}
 
 

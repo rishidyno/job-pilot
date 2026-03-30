@@ -4,14 +4,14 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Search, Loader2, Keyboard, GitCompare, Bookmark } from 'lucide-react'
+import { Search, Loader2, GitCompare, Bookmark } from 'lucide-react'
 import JobCard from '../components/JobCard'
 import JobComparison from '../components/JobComparison'
 import AddJobModal from '../components/AddJobModal'
 import EmptyState from '../components/EmptyState'
 import ScrapeModal from '../components/ScrapeModal'
 import Skeleton from '../components/Skeleton'
-import { PageWrapper, StaggerItem, ScrollProgress } from '../components/Animations'
+import { PageWrapper, ScrollProgress } from '../components/Animations'
 import api from '../api/client'
 import { useApi, useApiMutation } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'

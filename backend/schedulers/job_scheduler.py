@@ -1,14 +1,14 @@
 """
 ╔═══════════════════════════════════════════════════════════════════╗
-║  JOBPILOT — Background Job Scheduler                             ║
+║  JOBPILOT — Background Job Scheduler                              ║
 ║                                                                   ║
 ║  Uses APScheduler to run periodic tasks in the background:        ║
-║  - Job scraping (every N hours, configurable)                    ║
-║  - Auto-apply queue processing                                   ║
-║  - Daily summary notifications                                   ║
+║  - Job scraping (every N hours, configurable)                     ║
+║  - Auto-apply queue processing                                    ║
+║  - Daily summary notifications                                    ║
 ║                                                                   ║
 ║  The scheduler starts with the FastAPI app and runs tasks         ║
-║  in the background without blocking the API.                     ║
+║  in the background without blocking the API.                      ║
 ║                                                                   ║
 ║  USAGE:                                                           ║
 ║    from schedulers.job_scheduler import start_scheduler           ║
@@ -46,21 +46,8 @@ async def _scrape_all_portals():
 
 
 async def _process_auto_apply():
-    """Background task: Process the auto-apply queue for all users."""
-    logger.info("⏰ Processing auto-apply queue...")
-    try:
-        from appliers.applier_manager import applier_manager
-        from database import get_collection
-        users = await get_collection("users").find({}, {"_id": 1}).to_list(1000)
-        for user in users:
-            uid = str(user["_id"])
-            try:
-                results = await applier_manager.process_auto_apply_queue(user_id=uid)
-                logger.info(f"⏰ Auto-apply for user {uid}: {results.get('applied', 0)} submitted")
-            except Exception as e:
-                logger.error(f"⏰ Auto-apply failed for user {uid}: {e}")
-    except Exception as e:
-        logger.error(f"⏰ Auto-apply processing failed: {e}")
+    """Background task: Process the auto-apply queue. (Not yet implemented)"""
+    logger.debug("⏰ Auto-apply: not yet implemented")
 
 
 async def _send_daily_summary():

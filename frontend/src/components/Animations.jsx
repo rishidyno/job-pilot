@@ -1,24 +1,11 @@
 /**
- * JOBPILOT — Page animation wrapper + stagger utility
+ * JOBPILOT — Animation utilities
  */
+import { useState, useEffect } from 'react'
 
 /** Wraps a page with fade-in-up animation on mount */
 export function PageWrapper({ children, className = '' }) {
   return <div className={`page-enter ${className}`}>{children}</div>
-}
-
-/** Wraps a list item with staggered animation */
-export function StaggerItem({ children, index = 0, className = '' }) {
-  return (
-    <div className={`stagger-item ${className}`} style={{ animationDelay: `${index * 60}ms` }}>
-      {children}
-    </div>
-  )
-}
-
-/** Animated number that counts up and pops */
-export function AnimatedNumber({ value, className = '' }) {
-  return <span className={`count-pop inline-block ${className}`} key={value}>{value ?? '—'}</span>
 }
 
 /** Scroll progress bar */
@@ -35,5 +22,3 @@ export function ScrollProgress() {
   }, [])
   return width > 0 ? <div className="scroll-progress" style={{ width: `${width}%` }} /> : null
 }
-
-import { useState, useEffect } from 'react'
