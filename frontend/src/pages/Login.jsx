@@ -194,7 +194,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {isRegister && (
-              <InputField id="fullname" label="Full Name" value={fullName} placeholder="Rishi Raj"
+              <InputField id="fullname" label="Full Name" value={fullName} placeholder="Your full name"
                 onChange={e => { setFullName(e.target.value); setFieldErrors(p => ({ ...p, full_name: undefined })) }}
                 error={fieldErrors.full_name} autoComplete="name" ref={nameRef} />
             )}
