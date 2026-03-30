@@ -3,14 +3,64 @@
  * Information-dense, scannable, with skill matching and freshness indicators.
  */
 
-import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight } from 'lucide-react'
+import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight, ChevronDown } from 'lucide-react'
 import MatchScore from './MatchScore'
 import PdfViewer from './PdfViewer'
 import JobDetailModal from './JobDetailModal'
 import ConfirmDialog from './ConfirmDialog'
 import api from '../api/client'
-import { portalLabel, portalColor, scoreLabel, scoreColor, freshness, truncate } from '../utils/helpers'
-import { useState } from 'react'
+import { portalLabel, portalColor, scoreLabel, scoreColor, freshness, truncate, statusColor, capitalize } from '../utils/helpers'
+import { useState, useRef, useEffect } from 'react'
+
+const APP_STATUSES = [
+  { id: 'pending', label: 'Pending', icon: '⏳' },
+  { id: 'submitted', label: 'Applied', icon: '📤' },
+  { id: 'reviewing', label: 'Reviewing', icon: '👀' },
+  { id: 'interview', label: 'Interview', icon: '🎤' },
+  { id: 'offered', label: 'Offered', icon: '🎉' },
+  { id: 'accepted', label: 'Accepted', icon: '✅' },
+  { id: 'rejected', label: 'Rejected', icon: '❌' },
+  { id: 'withdrawn', label: 'Withdrawn', icon: '↩️' },
+]
+
+function AppStatusSelector({ currentStatus, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const current = APP_STATUSES.find(s => s.id === currentStatus) || APP_STATUSES[0]
+
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusColor(currentStatus)}`}>
+        <span>{current.icon}</span>
+        <span>{current.label}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-surface-800 rounded-xl border border-gray-200 dark:border-surface-700 shadow-xl z-30 py-1 overflow-hidden">
+          {APP_STATUSES.map(s => (
+            <button key={s.id} onClick={() => { onChange(s.id); setOpen(false) }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-surface-700 transition-colors ${
+                s.id === currentStatus ? 'bg-brand-50 dark:bg-brand-950/30 font-semibold' : ''
+              }`}>
+              <span>{s.icon}</span>
+              <span className="text-gray-700 dark:text-surface-200">{s.label}</span>
+              {s.id === currentStatus && <span className="ml-auto text-brand-600 dark:text-brand-400">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function CompanyAvatar({ name }) {
   const colors = ['bg-brand-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500']
@@ -31,7 +81,7 @@ function SkillTag({ skill, matched }) {
   )
 }
 
-export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote, onCompare, isComparing, userSkills = [] }) {
+export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onBookmark, onNote, onCompare, isComparing, userSkills = [], onAppStatusChange }) {
   const [tailoring, setTailoring] = useState(false)
   const [scoring, setScoring] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
@@ -95,8 +145,8 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
           {job.salary && <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">💰 {job.salary}</span>}
           {/* Experience */}
           {job.experience_required && <span className="text-xs text-gray-500 dark:text-surface-400 bg-gray-100 dark:bg-surface-700 px-2 py-0.5 rounded-full">{job.experience_required}</span>}
-          {/* Applied indicator */}
-          {isApplied && <span className="text-xs font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/30 px-2 py-0.5 rounded-full">✓ Applied</span>}
+          {/* Applied indicator — only show if no status selector */}
+          {isApplied && !job.application_id && <span className="text-xs font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950/30 px-2 py-0.5 rounded-full">✓ Applied</span>}
           {/* Tailored indicator */}
           {job.tailored_resume_id && !isApplied && <span className="text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/30 px-2 py-0.5 rounded-full">📄 Tailored</span>}
         </div>
@@ -165,14 +215,22 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
           {/* Right: primary actions */}
           <div className="flex items-center gap-1.5">
             <a href={job.url} target="_blank" rel="noopener noreferrer"
-              className="text-xs px-2.5 py-1 rounded-md border border-gray-200 dark:border-surface-600 text-gray-600 dark:text-surface-300 hover:bg-gray-50 dark:hover:bg-surface-700">
+              className="text-xs px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-surface-600 text-gray-600 dark:text-surface-300 hover:bg-gray-50 dark:hover:bg-surface-700">
               View ↗
             </a>
-            {['new', 'reviewed', 'shortlisted'].includes(job.status) && onApply && (
-              <button onClick={() => onApply(job._id)}
-                className="text-xs px-3 py-1 rounded-md bg-brand-600 text-white hover:bg-brand-700 font-medium flex items-center gap-1">
-                Apply <ArrowRight className="w-3 h-3" />
-              </button>
+            {/* Show status selector if application exists, Apply button if not */}
+            {job.application_id && onAppStatusChange ? (
+              <AppStatusSelector
+                currentStatus={job.application_status || 'pending'}
+                onChange={(newStatus) => onAppStatusChange(job.application_id, newStatus, job._id)}
+              />
+            ) : (
+              !job.application_id && ['new', 'reviewed', 'shortlisted'].includes(job.status) && onApply && (
+                <button onClick={() => onApply(job._id)}
+                  className="text-xs px-3 py-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-700 font-medium flex items-center gap-1">
+                  Apply <ArrowRight className="w-3 h-3" />
+                </button>
+              )
             )}
           </div>
         </div>

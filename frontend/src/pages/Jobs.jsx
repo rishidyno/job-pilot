@@ -179,6 +179,19 @@ export default function Jobs() {
     }
   }
 
+  const handleAppStatusChange = async (appId, newStatus, jobId) => {
+    try {
+      await api.applications.update(appId, { status: newStatus })
+      setData(prev => prev ? {
+        ...prev,
+        jobs: prev.jobs.map(j => j._id === jobId ? { ...j, application_status: newStatus } : j)
+      } : prev)
+      toast.success(`Status → ${newStatus}`)
+    } catch (err) {
+      toast.error('Status update failed')
+    }
+  }
+
   const jobs = data?.jobs || []
   const total = data?.total || 0
 
@@ -309,6 +322,7 @@ export default function Jobs() {
             <JobCard key={job._id} job={job}
               onApply={handleApply} onScore={handleScore} onTailor={handleTailor}
               onDelete={handleDelete} onBookmark={handleBookmark} onNote={handleNote}
+              onAppStatusChange={handleAppStatusChange}
               onCompare={(id) => setCompareIds(prev => {
                 const next = new Set(prev)
                 next.has(id) ? next.delete(id) : next.size < 3 ? next.add(id) : null

@@ -107,8 +107,25 @@ async def list_jobs(
     jobs = await cursor.to_list(limit)
     total = await jobs_col.count_documents(query)
 
+    # Join application data for each job
+    apps_col = get_collection("applications")
+    job_ids = [str(j["_id"]) for j in jobs]
+    if job_ids:
+        apps_cursor = apps_col.find({"user_id": user_id, "job_id": {"$in": job_ids}})
+        apps = {a["job_id"]: a async for a in apps_cursor}
+    else:
+        apps = {}
+
     for job in jobs:
-        job["_id"] = str(job["_id"])
+        jid = str(job["_id"])
+        job["_id"] = jid
+        app = apps.get(jid)
+        if app:
+            job["application_id"] = str(app["_id"])
+            job["application_status"] = app.get("status", "pending")
+        else:
+            job["application_id"] = None
+            job["application_status"] = None
 
     return {"jobs": jobs, "total": total, "skip": skip, "limit": limit, "has_more": (skip + limit) < total}
 
