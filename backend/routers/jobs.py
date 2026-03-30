@@ -317,6 +317,11 @@ async def add_manual_job(data: ManualJobInput, user_id: str = Depends(get_curren
         "updated_at": utc_now(),
     }
 
+    # Check if this URL already exists for this user
+    existing = await jobs_col.find_one({"user_id": user_id, "url": data.url.strip()})
+    if existing:
+        raise HTTPException(status_code=409, detail=f"This job is already in your list: \"{existing.get('title', '')}\" at {existing.get('company', '')}")
+
     try:
         result = await jobs_col.insert_one(job_doc)
     except Exception:
