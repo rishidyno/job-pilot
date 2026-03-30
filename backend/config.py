@@ -54,19 +54,19 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────
 
     # Comma-separated list of target job titles to search for
-    TARGET_ROLES: str = "Backend Engineer,Full Stack Developer,SDE-1,SDE-2,Software Engineer,Software Developer,Backend Developer"
+    TARGET_ROLES: str = "Software Engineer"
 
     # Minimum years of experience to target
-    TARGET_EXPERIENCE_MIN: float = 1.5
+    TARGET_EXPERIENCE_MIN: float = 0
 
     # Maximum years of experience to target
-    TARGET_EXPERIENCE_MAX: float = 2.5
+    TARGET_EXPERIENCE_MAX: float = 5
 
     # Comma-separated list of target locations
-    TARGET_LOCATIONS: str = "Bengaluru,Bangalore,Remote,Hyderabad,Noida,Gurgaon,Gurugram"
+    TARGET_LOCATIONS: str = "Remote"
 
     # Comma-separated list of priority skills for job matching
-    TARGET_SKILLS: str = "Java,Spring Boot,Node.js,Python,MongoDB,PostgreSQL,React,Docker,Microservices,REST API"
+    TARGET_SKILLS: str = ""
 
     # ─────────────────────────────────────
     # TELEGRAM NOTIFICATIONS
