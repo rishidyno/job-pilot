@@ -82,7 +82,7 @@ async def _compile_remote(latex_source: str) -> bytes:
                     "resources": [{"main": True, "content": latex_source}],
                 },
             )
-            if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("application/pdf"):
+            if resp.status_code in (200, 201) and resp.headers.get("content-type", "").startswith("application/pdf"):
                 return resp.content
             raise RuntimeError(f"Remote LaTeX API error: {resp.status_code}")
     except Exception as e:
