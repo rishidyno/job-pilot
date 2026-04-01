@@ -223,23 +223,25 @@ export default function ResumeManager() {
         <PdfViewer url={pdfUrl} title={pdfTitle} onClose={() => setPdfUrl(null)} />
       )}
 
-      {/* LaTeX Editor Modal */}
+      {/* LaTeX Editor + PDF Preview — side by side */}
       {latexModal && (
-        <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-3 sm:p-6"
+        <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-2 sm:p-4"
           role="dialog" aria-modal="true" aria-label="LaTeX editor">
-          <div className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl">
+          <div className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl">
+            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-700 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <Code className="w-4 h-4 text-brand-500 shrink-0" />
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-surface-200 truncate">{latexModal.title}</h3>
               </div>
               <div className="flex items-center gap-1.5">
-                <button onClick={() => {
-                  setPdfTitle(latexModal.title)
-                  setPdfUrl(api.resumes.compileUrl(latexModal.id))
-                }}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300">
-                  <Eye className="w-3 h-3" /> Preview PDF
+                <button onClick={() => setLatexModal(p => ({ ...p, showPreview: !p.showPreview }))}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium ${
+                    latexModal.showPreview
+                      ? 'bg-brand-600 text-white'
+                      : 'border border-gray-200 dark:border-surface-700 text-gray-600 dark:text-surface-300 hover:bg-gray-50 dark:hover:bg-surface-700'
+                  }`}>
+                  <Eye className="w-3 h-3" /> {latexModal.showPreview ? 'Hide Preview' : 'Show Preview'}
                 </button>
                 <button onClick={handleSaveLatex} disabled={latexSaving}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium">
@@ -250,9 +252,19 @@ export default function ResumeManager() {
                 </button>
               </div>
             </div>
-            <textarea value={latexEditing} onChange={e => setLatexEditing(e.target.value)}
-              className="flex-1 w-full font-mono text-xs bg-gray-900 dark:bg-surface-950 text-green-400 p-4 focus:outline-none resize-none"
-              spellCheck={false} />
+            {/* Body — split view */}
+            <div className="flex-1 flex min-h-0">
+              {/* LaTeX editor */}
+              <textarea value={latexEditing} onChange={e => setLatexEditing(e.target.value)}
+                className={`${latexModal.showPreview ? 'w-1/2' : 'w-full'} h-full font-mono text-xs bg-gray-900 dark:bg-surface-950 text-green-400 p-4 focus:outline-none resize-none border-r border-gray-700`}
+                spellCheck={false} />
+              {/* PDF preview */}
+              {latexModal.showPreview && (
+                <div className="w-1/2 h-full bg-gray-100 dark:bg-surface-900 flex flex-col">
+                  <iframe src={api.resumes.compileUrl(latexModal.id)} className="flex-1 w-full border-0" title="PDF Preview" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
