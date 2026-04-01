@@ -24,7 +24,7 @@ from utils.logger import logger
 router = APIRouter(prefix="/api/settings", tags=["Settings"])
 
 # Default templates for new users (seeded on first access)
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "defaults")
 
 def _load_default(filename):
     try:
