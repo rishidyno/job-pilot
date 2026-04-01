@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { FileText, Sparkles, Eye, Save, Check, Code, X } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import PdfViewer from '../components/PdfViewer'
+import LatexEditor from '../components/LatexEditor'
 import { PageWrapper } from '../components/Animations'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
@@ -110,14 +111,9 @@ export default function ResumeManager() {
         {latexLoading ? (
           <Skeleton className="h-[400px] sm:h-[500px] w-full rounded-lg" />
         ) : (
-          <textarea
-            value={editorContent}
-            onChange={(e) => setLatex(e.target.value)}
-            className="w-full h-[400px] sm:h-[500px] font-mono text-xs bg-gray-900 dark:bg-surface-950 text-green-400 p-3 sm:p-4 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-            spellCheck={false}
-            placeholder="Paste your LaTeX resume here..."
-            aria-label="LaTeX resume editor"
-          />
+          <div className="h-[400px] sm:h-[500px] rounded-lg overflow-hidden border border-gray-200 dark:border-surface-700">
+            <LatexEditor value={editorContent} onChange={(val) => setLatex(val || '')} />
+          </div>
         )}
       </div>
 
@@ -255,9 +251,9 @@ export default function ResumeManager() {
             {/* Body — split view */}
             <div className="flex-1 flex min-h-0">
               {/* LaTeX editor */}
-              <textarea value={latexEditing} onChange={e => setLatexEditing(e.target.value)}
-                className={`${latexModal.showPreview ? 'w-1/2' : 'w-full'} h-full font-mono text-xs bg-gray-900 dark:bg-surface-950 text-green-400 p-4 focus:outline-none resize-none border-r border-gray-700`}
-                spellCheck={false} />
+              <div className={`${latexModal.showPreview ? 'w-1/2' : 'w-full'} h-full border-r border-gray-200 dark:border-surface-700`}>
+                <LatexEditor value={latexEditing} onChange={(val) => setLatexEditing(val || '')} />
+              </div>
               {/* PDF preview */}
               {latexModal.showPreview && (
                 <div className="w-1/2 h-full bg-gray-100 dark:bg-surface-900 flex flex-col">
