@@ -1,17 +1,9 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies for WeasyPrint + Playwright
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 \
-    libffi-dev libgdk-pixbuf2.0-0 libcairo2 \
-    poppler-utils \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN playwright install chromium --with-deps
 
 COPY . .
 
