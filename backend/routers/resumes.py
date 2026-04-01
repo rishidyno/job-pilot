@@ -130,6 +130,19 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user_id)
     return resume
 
 
+@router.put("/{resume_id}/latex")
+async def update_resume_latex(resume_id: str, data: LatexContent, user_id: str = Depends(get_current_user_id)):
+    """Update a tailored resume's LaTeX source."""
+    resumes_col = get_collection("resumes")
+    result = await resumes_col.update_one(
+        {"_id": ObjectId(resume_id), "user_id": user_id},
+        {"$set": {"latex_source": data.content, "updated_at": utc_now()}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return {"success": True}
+
+
 @router.post("/tailor")
 async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)):
     """Tailor resume for a specific job. Fetches job description if missing."""

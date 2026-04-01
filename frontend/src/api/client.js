@@ -101,6 +101,7 @@ const api = {
     get: (id) => http.get(`/api/resumes/${id}`),
     getLatex: () => http.get('/api/resumes/latex'),
     updateLatex: (content) => http.put('/api/resumes/latex', { content }),
+    updateResumeLatex: (id, content) => http.put(`/api/resumes/${id}/latex`, { content }),
     tailor: (jobId) => http.post('/api/resumes/tailor', null, { params: { job_id: jobId }, timeout: 120000 }),
     compileUrl: (id) => {
       const token = localStorage.getItem('token')
