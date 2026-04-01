@@ -33,6 +33,7 @@ import shutil
 
 _default_pdflatex = shutil.which("pdflatex") or "/Library/TeX/texbin/pdflatex"
 PDFLATEX_PATH = os.environ.get("PDFLATEX_PATH", _default_pdflatex)
+HAS_PDFLATEX = os.path.isfile(PDFLATEX_PATH) if PDFLATEX_PATH else False
 
 
 class LatexContent(BaseModel):
@@ -40,7 +41,14 @@ class LatexContent(BaseModel):
 
 
 async def _compile_latex(latex_source: str) -> bytes:
-    """Compile LaTeX string to PDF bytes. Returns PDF content."""
+    """Compile LaTeX to PDF. Uses local pdflatex if available, else remote API."""
+    if HAS_PDFLATEX:
+        return await _compile_local(latex_source)
+    return await _compile_remote(latex_source)
+
+
+async def _compile_local(latex_source: str) -> bytes:
+    """Compile using local pdflatex."""
     with tempfile.TemporaryDirectory() as tmpdir:
         tex_path = os.path.join(tmpdir, "resume.tex")
         with open(tex_path, "w") as f:
@@ -60,6 +68,25 @@ async def _compile_latex(latex_source: str) -> bytes:
 
         with open(pdf_path, "rb") as f:
             return f.read()
+
+
+async def _compile_remote(latex_source: str) -> bytes:
+    """Compile using remote LaTeX API (latex.ytotech.com)."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://latex.ytotech.com/builds/sync",
+                json={
+                    "compiler": "pdflatex",
+                    "resources": [{"main": True, "content": latex_source}],
+                },
+            )
+            if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("application/pdf"):
+                return resp.content
+            raise RuntimeError(f"Remote LaTeX API error: {resp.status_code}")
+    except Exception as e:
+        raise RuntimeError(f"LaTeX compilation unavailable: {str(e)[:100]}. Install pdflatex locally for PDF preview.")
 
 
 @router.get("/latex")
