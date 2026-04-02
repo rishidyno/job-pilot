@@ -75,10 +75,12 @@ class AIService:
 
             logger.debug(f"Gemini response ({len(content)} chars)")
 
+            usage = getattr(response, 'usage_metadata', None)
+
             return {
                 "content": content,
-                "input_tokens": getattr(response, 'usage_metadata', {}).get('prompt_token_count', 0) if hasattr(response, 'usage_metadata') else 0,
-                "output_tokens": getattr(response, 'usage_metadata', {}).get('candidates_token_count', 0) if hasattr(response, 'usage_metadata') else 0,
+                "input_tokens": getattr(usage, 'prompt_token_count', 0) if usage else 0,
+                "output_tokens": getattr(usage, 'candidates_token_count', 0) if usage else 0,
                 "model": self.model_name,
             }
 
