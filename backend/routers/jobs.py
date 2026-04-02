@@ -93,7 +93,9 @@ async def list_jobs(
     if min_score is not None:
         query["match_score"] = {"$gte": min_score}
     if search:
-        pattern = {"$regex": search, "$options": "i"}
+        import re
+        safe_search = re.escape(search.strip())
+        pattern = {"$regex": safe_search, "$options": "i"}
         query["$or"] = [
             {"title": pattern},
             {"company": pattern},
