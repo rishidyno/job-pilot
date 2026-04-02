@@ -24,7 +24,7 @@ class AIService:
     """
 
     def __init__(self):
-        self.model_name = "gemini-2.0-flash"
+        self.model_name = "gemini-2.5-flash"
         self._total_requests = 0
         self._client = None
 
