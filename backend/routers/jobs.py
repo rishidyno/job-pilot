@@ -5,7 +5,7 @@ JOBPILOT — Jobs API Router with detailed scrape event logging.
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
-from bson import ObjectId
+from utils.helpers import valid_oid
 from database import get_collection
 from models.job import JobUpdate, JobStatus
 from services.job_matcher import job_matcher
@@ -213,10 +213,7 @@ async def stop_scrape(user_id: str = Depends(get_current_user_id)):
 @router.get("/{job_id}")
 async def get_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     jobs_col = get_collection("jobs")
-    try:
-        job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid job ID format")
+    job = await jobs_col.find_one({"_id": valid_oid(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     job["_id"] = str(job["_id"])
@@ -230,10 +227,7 @@ async def update_job(job_id: str, update: JobUpdate, user_id: str = Depends(get_
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     update_data["updated_at"] = utc_now()
-    try:
-        result = await jobs_col.update_one({"_id": ObjectId(job_id), "user_id": user_id}, {"$set": update_data})
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid job ID")
+    result = await jobs_col.update_one({"_id": valid_oid(job_id), "user_id": user_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"success": True, "modified": result.modified_count}
@@ -352,10 +346,7 @@ async def add_manual_job(data: ManualJobInput, user_id: str = Depends(get_curren
 @router.delete("/{job_id}")
 async def delete_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     jobs_col = get_collection("jobs")
-    try:
-        result = await jobs_col.delete_one({"_id": ObjectId(job_id), "user_id": user_id})
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid job ID")
+    result = await jobs_col.delete_one({"_id": valid_oid(job_id), "user_id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"success": True, "deleted": True}
@@ -366,7 +357,7 @@ async def score_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     jobs_col = get_collection("jobs")
     resumes_col = get_collection("resumes")
     try:
-        job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
+        job = await jobs_col.find_one({"_id": valid_oid(job_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID")
     if not job:
@@ -388,7 +379,7 @@ async def score_job(job_id: str, user_id: str = Depends(get_current_user_id)):
     )
 
     await jobs_col.update_one(
-        {"_id": ObjectId(job_id), "user_id": user_id},
+        {"_id": valid_oid(job_id), "user_id": user_id},
         {"$set": {"match_score": score_data["score"], "match_reasoning": score_data.get("reasoning", ""), "updated_at": utc_now()}}
     )
     return {"success": True, "score": score_data}

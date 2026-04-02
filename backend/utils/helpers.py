@@ -14,6 +14,15 @@ import random
 from datetime import datetime, timezone
 from typing import Optional
 from bson import ObjectId
+from fastapi import HTTPException
+
+
+def valid_oid(id_str: str) -> ObjectId:
+    """Validate and convert string to ObjectId. Raises 400 on invalid."""
+    try:
+        return ObjectId(id_str)
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid ID format: {id_str}")
 
 
 def utc_now() -> datetime:

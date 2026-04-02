@@ -11,6 +11,7 @@
 """
 
 from datetime import datetime, timedelta
+import time
 from fastapi import APIRouter, Depends
 from database import get_collection
 from services.auth_service import get_current_user_id
@@ -18,15 +19,27 @@ from services.user_prefs import get_user_prefs
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
+# Simple per-user TTL cache for dashboard queries
+_cache = {}
+CACHE_TTL = 60  # seconds
+
+def _get_cached(key):
+    entry = _cache.get(key)
+    if entry and time.time() - entry["ts"] < CACHE_TTL:
+        return entry["data"]
+    return None
+
+def _set_cached(key, data):
+    _cache[key] = {"data": data, "ts": time.time()}
+
 
 @router.get("/stats")
 async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
-    """
-    Get key metrics for the dashboard overview cards.
-    
-    Returns counts for: total jobs, new today, applied,
-    high matches, interviews, offers.
-    """
+    """Get key metrics for the dashboard overview cards."""
+    cached = _get_cached(f"stats:{user_id}")
+    if cached:
+        return cached
+
     jobs_col = get_collection("jobs")
     apps_col = get_collection("applications")
 
@@ -60,7 +73,7 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
     avg_result = await jobs_col.aggregate(pipeline).to_list(1)
     avg_score = round(avg_result[0]["avg_score"], 1) if avg_result and avg_result[0]["avg_score"] else 0
 
-    return {
+    result = {
         "total_jobs": total_jobs,
         "new_today": new_today,
         "new_this_week": new_this_week,
@@ -72,6 +85,8 @@ async def get_dashboard_stats(user_id: str = Depends(get_current_user_id)):
         "failed_applications": failed,
         "avg_match_score": avg_score,
     }
+    _set_cached(f"stats:{user_id}", result)
+    return result
 
 
 @router.get("/pipeline")

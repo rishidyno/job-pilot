@@ -13,7 +13,7 @@
 
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
-from bson import ObjectId
+from utils.helpers import valid_oid
 from database import get_collection
 from services.auth_service import get_current_user_id
 from utils.helpers import utc_now
@@ -53,7 +53,7 @@ async def get_application(app_id: str, user_id: str = Depends(get_current_user_i
     """Get a single application with full details and event timeline."""
     apps_col = get_collection("applications")
     try:
-        app = await apps_col.find_one({"_id": ObjectId(app_id), "user_id": user_id})
+        app = await apps_col.find_one({"_id": valid_oid(app_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid application ID")
     if not app:
@@ -71,7 +71,7 @@ async def create_application(job_id: str, force: bool = False, user_id: str = De
     jobs_col = get_collection("jobs")
     apps_col = get_collection("applications")
 
-    job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
+    job = await jobs_col.find_one({"_id": valid_oid(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -98,7 +98,7 @@ async def create_application(job_id: str, force: bool = False, user_id: str = De
     result = await apps_col.insert_one(app_doc)
 
     await jobs_col.update_one(
-        {"_id": ObjectId(job_id), "user_id": user_id},
+        {"_id": valid_oid(job_id), "user_id": user_id},
         {"$set": {"status": "applied", "updated_at": utc_now()}},
     )
 
@@ -131,7 +131,7 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
             "description": f"Status changed to {status}",
         }
         await apps_col.update_one(
-            {"_id": ObjectId(app_id), "user_id": user_id},
+            {"_id": valid_oid(app_id), "user_id": user_id},
             {"$push": {"events": event}}
         )
 
@@ -139,7 +139,7 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
         update_data["notes"] = notes
 
     result = await apps_col.update_one(
-        {"_id": ObjectId(app_id), "user_id": user_id},
+        {"_id": valid_oid(app_id), "user_id": user_id},
         {"$set": update_data}
     )
 
@@ -153,7 +153,7 @@ async def update_application(app_id: str, status: Optional[str] = None, notes: O
 async def retry_application(app_id: str, user_id: str = Depends(get_current_user_id)):
     """Retry a failed application — resets status to pending."""
     apps_col = get_collection("applications")
-    app = await apps_col.find_one({"_id": ObjectId(app_id), "user_id": user_id})
+    app = await apps_col.find_one({"_id": valid_oid(app_id), "user_id": user_id})
 
     if not app:
         raise HTTPException(status_code=404, detail="Application not found")
@@ -161,7 +161,7 @@ async def retry_application(app_id: str, user_id: str = Depends(get_current_user
         raise HTTPException(status_code=400, detail="Can only retry failed applications")
 
     await apps_col.update_one(
-        {"_id": ObjectId(app_id)},
+        {"_id": valid_oid(app_id)},
         {"$set": {"status": "pending", "error_message": None, "updated_at": utc_now()},
          "$push": {"events": {"timestamp": utc_now(), "event_type": "retry", "description": "Application retried"}}},
     )

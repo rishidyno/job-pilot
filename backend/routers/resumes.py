@@ -17,7 +17,7 @@ import tempfile
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import Response
-from bson import ObjectId
+from utils.helpers import valid_oid
 from pydantic import BaseModel
 from database import get_collection
 from services.resume_tailor import resume_tailor
@@ -148,7 +148,7 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user_id)
     """Get a specific resume by ID."""
     resumes_col = get_collection("resumes")
     try:
-        resume = await resumes_col.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
+        resume = await resumes_col.find_one({"_id": valid_oid(resume_id), "user_id": user_id})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid resume ID")
     if not resume:
@@ -162,7 +162,7 @@ async def update_resume_latex(resume_id: str, data: LatexContent, user_id: str =
     """Update a tailored resume's LaTeX source after manual editing."""
     resumes_col = get_collection("resumes")
     result = await resumes_col.update_one(
-        {"_id": ObjectId(resume_id), "user_id": user_id},
+        {"_id": valid_oid(resume_id), "user_id": user_id},
         {"$set": {"latex_source": data.content, "updated_at": utc_now()}},
     )
     if result.matched_count == 0:
@@ -176,7 +176,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
     jobs_col = get_collection("jobs")
     resumes_col = get_collection("resumes")
 
-    job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
+    job = await jobs_col.find_one({"_id": valid_oid(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -258,7 +258,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
     new_score = min(100, new_score + 5)
 
     await jobs_col.update_one(
-        {"_id": ObjectId(job_id), "user_id": user_id},
+        {"_id": valid_oid(job_id), "user_id": user_id},
         {"$set": {
             "tailored_resume_id": str(insert.inserted_id),
             "match_score": new_score,
@@ -283,7 +283,7 @@ async def compile_resume(resume_id: str, token: Optional[str] = None):
     user_id = decode_token(token)
 
     resumes_col = get_collection("resumes")
-    resume = await resumes_col.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
+    resume = await resumes_col.find_one({"_id": valid_oid(resume_id), "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
@@ -315,7 +315,7 @@ async def generate_cover_letter(job_id: str, tone: str = "professional", user_id
     resumes_col = get_collection("resumes")
     cl_col = get_collection("cover_letters")
 
-    job = await jobs_col.find_one({"_id": ObjectId(job_id), "user_id": user_id})
+    job = await jobs_col.find_one({"_id": valid_oid(job_id), "user_id": user_id})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
