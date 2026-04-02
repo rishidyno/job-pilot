@@ -33,6 +33,7 @@ passlib[bcrypt]==1.7.4            # Password hashing
 bcrypt==4.1.3                     # bcrypt backend
 
 # ─── Utilities ───
+slowapi==0.1.9              # API rate limiting
 python-dotenv==1.0.1        # .env file loading
 python-multipart==0.0.9     # File upload support
 aiofiles==24.1.0            # Async file operations

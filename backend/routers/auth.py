@@ -1,7 +1,9 @@
 """Auth API — register, login, get current user."""
 
 import re
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from database import get_collection
 from models.user import UserCreate, UserLogin
 from services.auth_service import (
@@ -10,6 +12,7 @@ from services.auth_service import (
 from utils.helpers import utc_now
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
+limiter = Limiter(key_func=get_remote_address)
 
 EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
@@ -31,7 +34,8 @@ def _validate_registration(data: UserCreate):
 
 
 @router.post("/register")
-async def register(data: UserCreate):
+@limiter.limit("3/minute")
+async def register(request: Request, data: UserCreate):
     _validate_registration(data)
     users = get_collection("users")
     if await users.find_one({"email": data.email.lower()}):
@@ -49,7 +53,8 @@ async def register(data: UserCreate):
 
 
 @router.post("/login")
-async def login(data: UserLogin):
+@limiter.limit("5/minute")
+async def login(request: Request, data: UserLogin):
     users = get_collection("users")
     user = await users.find_one({"email": data.email.lower().strip()})
     if not user or not verify_password(data.password, user["password_hash"]):

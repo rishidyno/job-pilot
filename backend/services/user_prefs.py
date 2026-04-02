@@ -8,14 +8,11 @@ from database import get_collection
 from config import settings
 
 
-async def get_user_prefs(user_id: str) -> dict:
+async def get_user_prefs(user_id: str = None) -> dict:
     """
     Get a specific user's preferences from MongoDB.
-    Falls back to .env defaults for missing fields.
+    Falls back to .env defaults if no profile exists or user_id is None.
     """
-    col = get_collection("user_profile")
-    profile = await col.find_one({"user_id": user_id})
-
     defaults = {
         "target_roles": settings.target_roles_list,
         "target_locations": settings.target_locations_list,
@@ -32,6 +29,12 @@ async def get_user_prefs(user_id: str) -> dict:
         "rules_md": "",
         "profile_md": "",
     }
+
+    if not user_id:
+        return defaults
+
+    col = get_collection("user_profile")
+    profile = await col.find_one({"user_id": user_id})
 
     if not profile:
         return defaults

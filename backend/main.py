@@ -30,6 +30,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 from config import settings
 from database import connect_db, close_db
 from schedulers.job_scheduler import start_scheduler, stop_scheduler
@@ -64,6 +69,10 @@ async def lifespan(app: FastAPI):
     """
     # ── STARTUP ──
     logger.info("🚀 Starting JobPilot...")
+
+    # Security check: refuse to start with default JWT secret
+    if "change-me" in settings.JWT_SECRET_KEY.lower() or "super-secret" in settings.JWT_SECRET_KEY.lower():
+        logger.warning("⚠️  JWT_SECRET_KEY is set to the default value! Change it in .env for production.")
 
     # Ensure required directories exist
     os.makedirs("logs", exist_ok=True)
@@ -106,6 +115,15 @@ app = FastAPI(
 
 
 # ─────────────────────────────────────
+# Rate Limiting
+# ─────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+
+# ─────────────────────────────────────
 # CORS Middleware
 # Allows the React frontend to talk to the API
 # ─────────────────────────────────────
@@ -117,7 +135,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:5173",
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://job-pilot.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

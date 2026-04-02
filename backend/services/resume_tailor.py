@@ -53,7 +53,7 @@ Description:
 
         # Include tailoring rules if available (from user's MongoDB profile)
         from services.user_prefs import get_user_prefs
-        prefs = await get_user_prefs(user_id) if user_id else {}
+        prefs = await get_user_prefs(user_id)
         rules = prefs.get("rules_md", "")
         if rules:
             parts.append(f"=== TAILORING RULES (follow these strictly) ===\n{rules[:4000]}")
