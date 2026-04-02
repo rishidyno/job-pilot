@@ -4,9 +4,10 @@
  */
 
 import { useState } from 'react'
-import { FileText, Sparkles, Eye, Save, Check } from 'lucide-react'
+import { FileText, Sparkles, Eye, Save, Check, Code, X, Loader2 } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import PdfViewer from '../components/PdfViewer'
+import LatexEditor from '../components/LatexEditor'
 import { PageWrapper } from '../components/Animations'
 import Skeleton from '../components/Skeleton'
 import api from '../api/client'
@@ -23,6 +24,10 @@ export default function ResumeManager() {
   const [saved, setSaved] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [pdfTitle, setPdfTitle] = useState('')
+  const [latexModal, setLatexModal] = useState(null) // { id, title, showPreview }
+  const [latexEditing, setLatexEditing] = useState('')
+  const [latexSaving, setLatexSaving] = useState(false)
+  const [latexLoading2, setLatexLoading2] = useState(false)
 
   const editorContent = latex !== null ? latex : (latexData?.content || '')
 
@@ -45,6 +50,33 @@ export default function ResumeManager() {
       setPdfUrl(api.resumes.compileUrl(base._id))
     } else {
       toast.warning('Save your LaTeX first, then preview.')
+    }
+  }
+
+  const handleViewLatex = async (resumeId, title) => {
+    setLatexLoading2(true)
+    try {
+      const { data } = await api.resumes.get(resumeId)
+      setLatexEditing(data.latex_source || '')
+      setLatexModal({ id: resumeId, title, showPreview: false })
+    } catch {
+      toast.error('Failed to load LaTeX source')
+    } finally {
+      setLatexLoading2(false)
+    }
+  }
+
+  const handleSaveLatex = async () => {
+    if (!latexModal) return
+    setLatexSaving(true)
+    try {
+      await api.resumes.updateResumeLatex(latexModal.id, latexEditing)
+      toast.success('LaTeX saved — preview will reflect changes')
+      refetchList()
+    } catch {
+      toast.error('Failed to save LaTeX')
+    } finally {
+      setLatexSaving(false)
     }
   }
 
@@ -84,14 +116,9 @@ export default function ResumeManager() {
         {latexLoading ? (
           <Skeleton className="h-[400px] sm:h-[500px] w-full rounded-lg" />
         ) : (
-          <textarea
-            value={editorContent}
-            onChange={(e) => setLatex(e.target.value)}
-            className="w-full h-[400px] sm:h-[500px] font-mono text-xs bg-gray-900 dark:bg-surface-950 text-green-400 p-3 sm:p-4 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-            spellCheck={false}
-            placeholder="Paste your LaTeX resume here..."
-            aria-label="LaTeX resume editor"
-          />
+          <div className="h-[400px] sm:h-[500px] rounded-lg overflow-hidden border border-gray-200 dark:border-surface-700">
+            <LatexEditor value={editorContent} onChange={(val) => setLatex(val || '')} />
+          </div>
         )}
       </div>
 
@@ -159,6 +186,12 @@ export default function ResumeManager() {
                         Job ↗
                       </a>
                     )}
+                    <button onClick={() => handleViewLatex(resume._id, `${resume.job_title || 'Resume'} — ${resume.job_company || ''}`)}
+                      disabled={latexLoading2}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300 disabled:opacity-50"
+                      aria-label="View and edit LaTeX source">
+                      {latexLoading2 ? <Loader2 className="w-3 h-3 animate-spin" /> : <Code className="w-3 h-3" />} LaTeX
+                    </button>
                     <button onClick={() => {
                       setPdfTitle(`${resume.job_title || 'Resume'} — ${resume.job_company || ''}`)
                       setPdfUrl(api.resumes.compileUrl(resume._id))
@@ -190,6 +223,52 @@ export default function ResumeManager() {
 
       {pdfUrl && (
         <PdfViewer url={pdfUrl} title={pdfTitle} onClose={() => setPdfUrl(null)} />
+      )}
+
+      {/* LaTeX Editor — side-by-side with PDF preview */}
+      {latexModal && (
+        <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-2 sm:p-4"
+          role="dialog" aria-modal="true" aria-label="LaTeX editor"
+          onKeyDown={e => { if (e.key === 'Escape') setLatexModal(null) }}>
+          <div className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-700 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Code className="w-4 h-4 text-brand-500 shrink-0" />
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-surface-200 truncate">{latexModal.title}</h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => setLatexModal(p => ({ ...p, showPreview: !p.showPreview }))}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                    latexModal.showPreview
+                      ? 'bg-brand-600 text-white'
+                      : 'border border-gray-200 dark:border-surface-700 text-gray-600 dark:text-surface-300 hover:bg-gray-50 dark:hover:bg-surface-700'
+                  }`}>
+                  <Eye className="w-3 h-3" /> {latexModal.showPreview ? 'Hide Preview' : 'Show Preview'}
+                </button>
+                <button onClick={handleSaveLatex} disabled={latexSaving}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 font-medium">
+                  {latexSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  {latexSaving ? 'Saving...' : 'Save'}
+                </button>
+                <button onClick={() => setLatexModal(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-surface-700 rounded-lg" aria-label="Close editor">
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+            {/* Body — split view */}
+            <div className="flex-1 flex min-h-0">
+              <div className={`${latexModal.showPreview ? 'w-1/2' : 'w-full'} h-full border-r border-gray-200 dark:border-surface-700`}>
+                <LatexEditor value={latexEditing} onChange={(val) => setLatexEditing(val || '')} />
+              </div>
+              {latexModal.showPreview && (
+                <div className="w-1/2 h-full bg-gray-100 dark:bg-surface-900">
+                  <iframe src={api.resumes.compileUrl(latexModal.id)} className="w-full h-full border-0" title="PDF Preview" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </PageWrapper>
   )
