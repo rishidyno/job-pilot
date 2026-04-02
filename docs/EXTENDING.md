@@ -41,7 +41,7 @@ Components live in `frontend/src/components/`. Follow existing patterns:
 
 - **Rules**: Edit from Settings UI → stored per-user in MongoDB `user_profile.rules_md`
 - **Profile**: Edit from Settings UI → stored per-user in MongoDB `user_profile.profile_md`
-- **AI service**: `backend/services/ai_service.py` wraps Kiro CLI
+- **AI service**: `backend/services/ai_service.py` wraps Google Gemini
 - **Resume tailoring prompt**: `backend/services/resume_tailor.py`
 - **Scoring logic**: `backend/services/job_matcher.py`
 

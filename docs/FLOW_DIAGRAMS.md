@@ -77,7 +77,7 @@ Fetch: base LaTeX + job description + rules_md + profile_md
 (all per-user from MongoDB)
         │
         ▼
-Send to Kiro CLI (Claude):
+Send to Google Gemini (gemini-2.5-flash):
   - System prompt (tailor instructions)
   - Job: title, company, skills, description
   - Rules: user's AI rules from MongoDB

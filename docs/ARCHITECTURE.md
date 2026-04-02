@@ -36,7 +36,7 @@ User pastes URL → POST /api/jobs/fetch-details
 ### Resume Tailoring
 ```
 Base LaTeX (MongoDB) + Job Description + rules_md + profile_md
-→ Kiro CLI (Claude) → Tailored LaTeX
+→ Google Gemini → Tailored LaTeX
 → pdflatex → PDF → MongoDB resumes collection
 → Job score updated
 ```
@@ -54,7 +54,7 @@ Register/Login → bcrypt hash → JWT token → localStorage
 | Decision | Why |
 |----------|-----|
 | **python-jobspy over Playwright** | No login needed, 10x faster, doesn't block event loop |
-| **Kiro CLI over Anthropic API** | No API key cost, uses existing Claude subscription |
+| **Google Gemini (free tier) | 15 RPM, 1M tokens/day, no local tools needed |
 | **User prefs in MongoDB (not .env)** | Multi-user support, no backend access needed |
 | **Rules + profile per user in MongoDB** | Multi-user isolation, not shared files on disk |
 | **LaTeX for resumes** | Professional output, precise formatting control |
@@ -98,7 +98,7 @@ main.jsx
 - Title relevance: up to 30 points
 - Runs on every scraped job instantly
 
-### AI Score (Claude via Kiro CLI)
+### AI Score (Google Gemini)
 - Skills Match: 35%
 - Experience Fit: 25%
 - Role Alignment: 20%

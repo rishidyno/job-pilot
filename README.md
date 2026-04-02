@@ -103,6 +103,8 @@ Powered by [python-jobspy](https://github.com/speedyapply/JobSpy). No login cred
 - **Page transitions** — fade-in on mount, scroll progress bar
 - **Skeleton loading** — smooth loading states everywhere
 - **Focus trapping** — accessible modals
+- **Monaco Editor** — VS Code-like LaTeX editing with syntax highlighting
+- **Rate limiting** — API protected against brute-force and abuse
 
 ---
 
@@ -129,9 +131,10 @@ Edit `.env` with your MongoDB URI and JWT secret:
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/?appName=Cluster0
 MONGODB_DB_NAME=jobpilot
 JWT_SECRET_KEY=your-secret-key-here
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
-> **Note:** Job portal credentials are NOT required. Scraping uses public APIs. All job preferences are configured from the UI after registration.
+> **Note:** Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Job portal credentials are NOT required — scraping uses public APIs. All job preferences are configured from the UI after registration.
 
 ### 2. Backend
 
@@ -172,7 +175,7 @@ docker-compose up --build
 | **Backend** | Python, FastAPI | Async, auto-docs, great ecosystem |
 | **Database** | MongoDB (Motor async driver) | Flexible schema for varied job data |
 | **Scraping** | python-jobspy | Multi-portal, no login, battle-tested |
-| **AI** | Kiro CLI (Claude) | Resume tailoring, no API key needed |
+| **AI** | Google Gemini (gemini-2.5-flash) | Resume tailoring, job scoring, free tier |
 | **PDF** | pdflatex | Professional LaTeX resume compilation |
 | **Auth** | JWT + bcrypt | Stateless, secure |
 | **Charts** | Recharts | Composable React charts |
@@ -198,7 +201,7 @@ job-pilot/
 │   │   ├── dashboard.py        # Stats, charts, insights
 │   │   └── settings.py         # Profile, preferences, rules
 │   ├── services/
-│   │   ├── ai_service.py       # Kiro CLI integration
+│   │   ├── ai_service.py       # Google Gemini integration (retry, timeout)
 │   │   ├── resume_tailor.py    # AI resume tailoring
 │   │   ├── job_matcher.py      # Scoring algorithm
 │   │   ├── job_parser.py       # URL parser for manual job add
