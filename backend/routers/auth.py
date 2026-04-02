@@ -1,6 +1,7 @@
 """Auth API — register, login, get current user."""
 
 import re
+import os
 from fastapi import APIRouter, HTTPException, Depends, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -12,7 +13,7 @@ from services.auth_service import (
 from utils.helpers import utc_now
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_remote_address, enabled=os.environ.get("TESTING") != "1")
 
 EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 

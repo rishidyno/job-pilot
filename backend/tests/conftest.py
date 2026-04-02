@@ -11,6 +11,9 @@ from unittest.mock import patch, AsyncMock
 # Ensure backend is on sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# Disable rate limiting in tests
+os.environ["TESTING"] = "1"
+
 from mongomock_motor import AsyncMongoMockClient
 from httpx import AsyncClient, ASGITransport
 from bson import ObjectId

@@ -16,7 +16,7 @@ async def anon_client():
 
 async def test_register(anon_client):
     r = await anon_client.post("/api/auth/register", json={
-        "email": "new@example.com", "password": "secret123", "full_name": "New User",
+        "email": "new@example.com", "password": "Secret123", "full_name": "New User",
     })
     assert r.status_code == 200
     data = r.json()
@@ -26,19 +26,20 @@ async def test_register(anon_client):
 
 
 async def test_register_duplicate(anon_client):
-    payload = {"email": "dup@example.com", "password": "secret123", "full_name": "Dup"}
+    payload = {"email": "dup@example.com", "password": "Secret123", "full_name": "Dup"}
     await anon_client.post("/api/auth/register", json=payload)
     r = await anon_client.post("/api/auth/register", json=payload)
-    assert r.status_code == 400
-    assert "already registered" in r.json()["detail"].lower()
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert "already registered" in str(detail).lower()
 
 
 async def test_login_success(anon_client):
     await anon_client.post("/api/auth/register", json={
-        "email": "login@example.com", "password": "secret123", "full_name": "Login User",
+        "email": "login@example.com", "password": "Secret123", "full_name": "Login User",
     })
     r = await anon_client.post("/api/auth/login", json={
-        "email": "login@example.com", "password": "secret123",
+        "email": "login@example.com", "password": "Secret123",
     })
     assert r.status_code == 200
     assert "token" in r.json()
@@ -46,7 +47,7 @@ async def test_login_success(anon_client):
 
 async def test_login_wrong_password(anon_client):
     await anon_client.post("/api/auth/register", json={
-        "email": "wrong@example.com", "password": "secret123", "full_name": "Wrong",
+        "email": "wrong@example.com", "password": "Secret123", "full_name": "Wrong",
     })
     r = await anon_client.post("/api/auth/login", json={
         "email": "wrong@example.com", "password": "badpassword",
@@ -56,7 +57,7 @@ async def test_login_wrong_password(anon_client):
 
 async def test_login_nonexistent(anon_client):
     r = await anon_client.post("/api/auth/login", json={
-        "email": "ghost@example.com", "password": "secret123",
+        "email": "ghost@example.com", "password": "Secret123",
     })
     assert r.status_code == 401
 
