@@ -20,17 +20,21 @@ const SHORTCUTS = [
 export function useKeyboardShortcuts() {
   const navigate = useNavigate()
   const [showHelp, setShowHelp] = useState(false)
+  // `pending` tracks the first key of a two-key chord (e.g. 'g' in g+d).
+  // After pressing 'g', we wait up to 1 second for a second key. If no second
+  // key arrives within 1s, pending resets to null (the setTimeout clears it).
   const [pending, setPending] = useState(null)
 
   const handleKey = useCallback((e) => {
-    // Don't trigger in inputs
+    // Don't trigger shortcuts while the user is typing in a form field
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
 
     const key = e.key
 
     if (key === '?') { e.preventDefault(); setShowHelp(true); return }
 
-    // Two-key combos: g + letter
+    // ── Two-key chord: g → d/j/a/r/s ──
+    // When pending='g', the next keypress completes the chord and navigates.
     if (pending === 'g') {
       setPending(null)
       const routes = { d: '/dashboard', j: '/jobs', a: '/applications', r: '/resumes', s: '/settings' }
@@ -38,7 +42,12 @@ export function useKeyboardShortcuts() {
       return
     }
 
-    if (key === 'g') { setPending('g'); setTimeout(() => setPending(null), 1000); return }
+    if (key === 'g') {
+      setPending('g')
+      // Auto-cancel the chord if no second key arrives within 1 second
+      setTimeout(() => setPending(null), 1000)
+      return
+    }
 
     if (key === '/') {
       e.preventDefault()
