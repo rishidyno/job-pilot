@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     MONGODB_URI: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "jobpilot"
 
+    # Google Gemini API key (free at https://aistudio.google.com/apikey)
+    GEMINI_API_KEY: str = ""
+
     # ─────────────────────────────────────
     # JOB SEARCH DEFAULTS (overridden per user in MongoDB)
     # ─────────────────────────────────────

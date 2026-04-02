@@ -12,8 +12,8 @@ pydantic-settings==2.5.2    # Settings management from env
 motor==3.5.1                # Async MongoDB driver
 pymongo==4.8.0              # MongoDB driver (motor depends on this)
 
-# ─── AI & NLP ───
-# Using kiro-cli locally — no API library needed
+# ─── AI ───
+google-genai>=1.0.0            # Google Gemini API client
 
 # ─── Web Scraping ───
 python-jobspy==1.1.82          # Multi-portal job scraper (LinkedIn, Indeed, Glassdoor, Google, Naukri)
