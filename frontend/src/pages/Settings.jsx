@@ -297,7 +297,7 @@ export default function Settings() {
         <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-surface-700 rounded-xl border border-gray-200 dark:border-surface-700">
           <p className="text-xs text-gray-500 dark:text-surface-400">
             API: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{health.status}</span> •
-            AI Requests: {health.ai_tokens_used?.total_requests || 0} •
+            AI Engine: <span className="text-brand-600 dark:text-brand-400 font-medium">{health.ai_tokens_used?.engine || 'unknown'}</span> •
             Telegram: {health.telegram_configured ? '✅' : '❌'}
           </p>
         </div>
