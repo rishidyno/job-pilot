@@ -134,7 +134,7 @@ class ScraperManager:
                         results_wanted=30,
                         hours_old=720,  # 30 days
                         country_indeed="India" if portal_name in ("indeed", "glassdoor") else None,
-                        linkedin_fetch_description=True if portal_name == "linkedin" else False,
+                        linkedin_fetch_description=False,
                         verbose=0,
                     )
                 except Exception as e:
