@@ -240,6 +240,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
         "job_match_score": job.get("match_score"),
         "latex_source": result["latex_source"],
         "changes_made": result.get("changes_made", []),
+        "extra_outputs": result.get("extra_outputs", {}),
         "created_at": utc_now(),
     }
     insert = await resumes_col.insert_one(resume_doc)
@@ -270,6 +271,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
         "success": True,
         "resume_id": str(insert.inserted_id),
         "changes_made": result.get("changes_made", []),
+        "extra_outputs": result.get("extra_outputs", {}),
         "new_score": new_score,
     }
 

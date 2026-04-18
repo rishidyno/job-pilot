@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { FileText, Sparkles, Eye, Save, Check, Code, X, Loader2 } from 'lucide-react'
+import { FileText, Sparkles, Eye, Save, Check, Code, X, Loader2, Copy, CheckCheck } from 'lucide-react'
 import EmptyState from '../components/EmptyState'
 import PdfViewer from '../components/PdfViewer'
 import LatexEditor from '../components/LatexEditor'
@@ -28,6 +28,16 @@ export default function ResumeManager() {
   const [latexEditing, setLatexEditing] = useState('')
   const [latexSaving, setLatexSaving] = useState(false)
   const [latexLoading2, setLatexLoading2] = useState(false)
+  const [extraModal, setExtraModal] = useState(null) // { key, value }
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const formatKey = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
   const editorContent = latex !== null ? latex : (latexData?.content || '')
 
@@ -192,6 +202,12 @@ export default function ResumeManager() {
                       aria-label="View and edit LaTeX source">
                       {latexLoading2 ? <Loader2 className="w-3 h-3 animate-spin" /> : <Code className="w-3 h-3" />} LaTeX
                     </button>
+                    {Object.entries(resume.extra_outputs || {}).map(([key, value]) => (
+                      <button key={key} onClick={() => { setCopied(false); setExtraModal({ key, value }) }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40">
+                        <Sparkles className="w-3 h-3" /> {formatKey(key)}
+                      </button>
+                    ))}
                     <button onClick={() => {
                       setPdfTitle(`${resume.job_title || 'Resume'} — ${resume.job_company || ''}`)
                       setPdfUrl(api.resumes.compileUrl(resume._id))
@@ -223,6 +239,34 @@ export default function ResumeManager() {
 
       {pdfUrl && (
         <PdfViewer url={pdfUrl} title={pdfTitle} onClose={() => setPdfUrl(null)} />
+      )}
+
+      {extraModal && (
+        <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-4"
+          role="dialog" aria-modal="true"
+          onKeyDown={e => { if (e.key === 'Escape') setExtraModal(null) }}>
+          <div className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-700 shrink-0">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-500" />
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-surface-200">{formatKey(extraModal.key)}</h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => handleCopy(extraModal.value)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300">
+                  {copied ? <CheckCheck className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+                <button onClick={() => setExtraModal(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-surface-700 rounded-lg" aria-label="Close">
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <pre className="text-sm text-gray-700 dark:text-surface-200 whitespace-pre-wrap font-sans leading-relaxed">{extraModal.value}</pre>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* LaTeX Editor — side-by-side with PDF preview */}

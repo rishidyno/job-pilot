@@ -28,7 +28,9 @@ RULES:
 9. If TAILORING RULES are provided, follow them strictly
 10. If CANDIDATE PROFILE is provided, use it to ensure accuracy
 
-After the complete LaTeX, add a line "%%CHANGES%%" followed by a brief list of what you changed, one per line starting with "- "."""
+After the complete LaTeX:
+1. Add "%%CHANGES%%" followed by a brief list of what you changed, one per line starting with "- ".
+2. If the TAILORING RULES specify any additional outputs (e.g. cold_message, cover_letter, ats_tips), add "%%JSON%%" followed by a single valid JSON object where each key is the output name and the value is the generated content as a string. Only include keys that the rules explicitly request. If no additional outputs are requested, omit the %%JSON%% section entirely."""
 
     async def tailor_resume(
         self,
@@ -75,14 +77,28 @@ Description:
 
         content = result["content"]
 
-        # Split LaTeX from changes list
+        import json as _json
+
         latex_out = content
         changes = []
+        extra_outputs = {}
 
         if "%%CHANGES%%" in content:
             parts = content.split("%%CHANGES%%", 1)
             latex_out = parts[0].strip()
-            changes = [l.strip().lstrip("- ") for l in parts[1].strip().split("\n") if l.strip().startswith("- ")]
+            after_changes = parts[1]
+
+            if "%%JSON%%" in after_changes:
+                changes_part, json_part = after_changes.split("%%JSON%%", 1)
+                changes = [l.strip().lstrip("- ") for l in changes_part.strip().split("\n") if l.strip().startswith("- ")]
+                try:
+                    extra_outputs = _json.loads(json_part.strip())
+                    if not isinstance(extra_outputs, dict):
+                        extra_outputs = {}
+                except Exception:
+                    extra_outputs = {}
+            else:
+                changes = [l.strip().lstrip("- ") for l in after_changes.strip().split("\n") if l.strip().startswith("- ")]
 
         # Extract LaTeX if wrapped in code fences
         if "\\documentclass" in latex_out:
@@ -94,11 +110,12 @@ Description:
         if "\\documentclass" not in latex_out:
             raise RuntimeError("AI response did not contain valid LaTeX")
 
-        logger.info(f"Resume tailored for '{job_title}' at {company_name}. Changes: {len(changes)}")
+        logger.info(f"Resume tailored for '{job_title}' at {company_name}. Changes: {len(changes)}, extras: {list(extra_outputs.keys())}")
 
         return {
             "latex_source": latex_out,
             "changes_made": changes,
+            "extra_outputs": extra_outputs,
         }
 
 
