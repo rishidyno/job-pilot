@@ -229,9 +229,13 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
         raise HTTPException(status_code=500, detail=f"AI tailoring failed: {str(e)[:200]}")
 
     # Save tailored version with job context for easy reference
+    company_clean = "".join(c for c in job["company"] if c.isalnum() or c in " _-").strip().replace(" ", "_")
+    resume_name = f"Rishi_Raj_Resume_{company_clean}"
+
     resume_doc = {
         "is_base": False,
         "user_id": user_id,
+        "name": resume_name,
         "job_id": job_id,
         "job_title": job["title"],
         "job_company": job["company"],
@@ -295,8 +299,9 @@ async def compile_resume(resume_id: str, token: Optional[str] = None):
     if latex:
         try:
             pdf_bytes = await _compile_latex(latex)
+            filename = resume.get("name", "resume") + ".pdf"
             return Response(content=pdf_bytes, media_type="application/pdf",
-                            headers={"Content-Disposition": "inline"})
+                            headers={"Content-Disposition": f'inline; filename="{filename}"'})
         except Exception as e:
             logger.error(f"LaTeX compilation failed: {e}")
             raise HTTPException(status_code=500, detail=f"Compilation failed: {str(e)[:200]}")
