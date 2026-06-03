@@ -263,6 +263,7 @@ async def tailor_resume(job_id: str, user_id: str = Depends(get_current_user_id)
         {"$set": {
             "tailored_resume_id": str(insert.inserted_id),
             "match_score": new_score,
+            "extra_outputs": result.get("extra_outputs", {}),
             "updated_at": utc_now(),
         }}
     )
