@@ -76,7 +76,7 @@ async def list_jobs(
     bookmarked: Optional[bool] = Query(None),
     min_score: Optional[int] = Query(None, ge=0, le=100),
     search: Optional[str] = Query(None),
-    sort_by: str = Query("match_score"),
+    sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),

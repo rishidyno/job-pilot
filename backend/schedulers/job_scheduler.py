@@ -50,6 +50,21 @@ async def _process_auto_apply():
     logger.debug("⏰ Auto-apply: not yet implemented")
 
 
+async def _cleanup_old_jobs():
+    """Background task: Delete jobs older than 2 months."""
+    try:
+        from database import get_collection
+        from datetime import datetime, timedelta
+
+        cutoff = datetime.utcnow() - timedelta(days=60)
+        jobs_col = get_collection("jobs")
+        result = await jobs_col.delete_many({"created_at": {"$lt": cutoff}})
+        if result.deleted_count:
+            logger.info(f"🗑️ Cleaned up {result.deleted_count} jobs older than 2 months")
+    except Exception as e:
+        logger.error(f"⏰ Job cleanup failed: {e}")
+
+
 async def _send_daily_summary():
     """Background task: Send daily summary via Telegram (aggregated across all users)."""
     try:
@@ -128,6 +143,15 @@ def start_scheduler() -> AsyncIOScheduler:
             name="Send daily summary via Telegram",
             replace_existing=True,
         )
+
+    # ── Task 4: Cleanup jobs older than 2 months (daily at midnight UTC) ──
+    _scheduler.add_job(
+        _cleanup_old_jobs,
+        trigger=CronTrigger(hour=0, minute=0),
+        id="cleanup_old_jobs",
+        name="Delete jobs older than 2 months",
+        replace_existing=True,
+    )
 
     _scheduler.start()
     logger.info(
