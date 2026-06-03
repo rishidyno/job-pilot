@@ -30,7 +30,7 @@ RULES:
 
 After the complete LaTeX:
 1. Add "%%CHANGES%%" followed by a brief list of what you changed, one per line starting with "- ".
-2. If the TAILORING RULES specify any additional outputs (e.g. cold_message, cover_letter, ats_tips), add "%%JSON%%" followed by a single valid JSON object where each key is the output name and the value is the generated content as a string. Only include keys that the rules explicitly request. If no additional outputs are requested, omit the %%JSON%% section entirely."""
+2. ALWAYS add "%%JSON%%" followed by a single valid JSON object. You MUST include a "cold_message" key — a short personalized LinkedIn cold outreach message (max 10 lines) the candidate can send to a recruiter/hiring manager for this role. If TAILORING RULES have cold message rules, follow them. Also include any other extra output keys the rules request."""
 
     async def tailor_resume(
         self,

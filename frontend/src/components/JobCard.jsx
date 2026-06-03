@@ -3,7 +3,7 @@
  * Information-dense, scannable, with skill matching and freshness indicators.
  */
 
-import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight, ChevronDown } from 'lucide-react'
+import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight, ChevronDown, MessageSquare, Copy, CheckCheck, X } from 'lucide-react'
 import MatchScore from './MatchScore'
 import PdfViewer from './PdfViewer'
 import JobDetailModal from './JobDetailModal'
@@ -87,6 +87,8 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
   const [pdfUrl, setPdfUrl] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showColdMsg, setShowColdMsg] = useState(false)
+  const [coldCopied, setColdCopied] = useState(false)
 
   const handleTailor = async (e) => { e?.stopPropagation(); setTailoring(true); try { await onTailor(job._id) } finally { setTailoring(false) } }
   const handleScore = async (e) => { e?.stopPropagation(); setScoring(true); try { await onScore(job._id) } finally { setScoring(false) } }
@@ -167,6 +169,13 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
             onClick={e => e.stopPropagation()}>
             <FileText className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
             <span className="text-xs text-purple-700 dark:text-purple-300 font-medium flex-1">Tailored resume ready</span>
+            {job.extra_outputs?.cold_message && (
+              <button onClick={() => { setColdCopied(false); setShowColdMsg(true) }}
+                className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 bg-white dark:bg-surface-800 px-2 py-1 rounded-md border border-indigo-200 dark:border-indigo-800"
+                aria-label="View cold message">
+                <MessageSquare className="w-3 h-3" /> Cold Msg
+              </button>
+            )}
             <button onClick={() => setPdfUrl(api.resumes.compileUrl(job.tailored_resume_id))}
               className="flex items-center gap-1 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 bg-white dark:bg-surface-800 px-2 py-1 rounded-md border border-purple-200 dark:border-purple-800"
               aria-label="View tailored resume PDF">
@@ -244,6 +253,33 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
           confirmLabel="Delete" variant="danger"
           onConfirm={() => { setShowDeleteConfirm(false); onDelete(job._id) }}
           onCancel={() => setShowDeleteConfirm(false)} />
+      )}
+      {showColdMsg && job.extra_outputs?.cold_message && (
+        <div className="fixed inset-0 glass-overlay z-50 flex items-center justify-center p-4"
+          role="dialog" aria-modal="true" onClick={() => setShowColdMsg(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setShowColdMsg(false) }}>
+          <div className="bg-white dark:bg-surface-800 rounded-xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-700">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-surface-200">Cold Message</h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => { navigator.clipboard.writeText(job.extra_outputs.cold_message); setColdCopied(true); setTimeout(() => setColdCopied(false), 2000) }}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 dark:border-surface-700 rounded-lg hover:bg-gray-50 dark:hover:bg-surface-700 text-gray-600 dark:text-surface-300">
+                  {coldCopied ? <CheckCheck className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                  {coldCopied ? 'Copied!' : 'Copy'}
+                </button>
+                <button onClick={() => setShowColdMsg(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-surface-700 rounded-lg" aria-label="Close">
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+            <div className="p-4">
+              <pre className="text-sm text-gray-700 dark:text-surface-200 whitespace-pre-wrap font-sans leading-relaxed">{job.extra_outputs.cold_message}</pre>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

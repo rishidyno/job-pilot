@@ -122,7 +122,7 @@ export default function Jobs() {
         setData(prev => prev ? {
           ...prev,
           jobs: prev.jobs.map(j => j._id === jobId
-            ? { ...j, tailored_resume_id: result.resume_id, match_score: result.new_score ?? j.match_score }
+            ? { ...j, tailored_resume_id: result.resume_id, match_score: result.new_score ?? j.match_score, extra_outputs: result.extra_outputs || {} }
             : j
           )
         } : prev)
