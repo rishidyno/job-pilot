@@ -3,7 +3,7 @@
  * Information-dense, scannable, with skill matching and freshness indicators.
  */
 
-import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight, ChevronDown, MessageSquare, Copy, CheckCheck, X } from 'lucide-react'
+import { MapPin, ExternalLink, Star, Trash2, FileText, Eye, Bookmark, Wifi, Building2, ArrowRight, ChevronDown, MessageSquare, Copy, CheckCheck, X, Pencil } from 'lucide-react'
 import MatchScore from './MatchScore'
 import PdfViewer from './PdfViewer'
 import JobDetailModal from './JobDetailModal'
@@ -89,6 +89,9 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showColdMsg, setShowColdMsg] = useState(false)
   const [coldCopied, setColdCopied] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editData, setEditData] = useState({})
+  const [editSaving, setEditSaving] = useState(false)
 
   const handleTailor = async (e) => { e?.stopPropagation(); setTailoring(true); try { await onTailor(job._id) } finally { setTailoring(false) } }
   const handleScore = async (e) => { e?.stopPropagation(); setScoring(true); try { await onScore(job._id) } finally { setScoring(false) } }
@@ -220,6 +223,10 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
+            <button onClick={() => { setEditData({ title: job.title, company: job.company, location: job.location || '', skills: (job.skills || []).join(', '), description: job.description || '' }); setShowEdit(true) }}
+              className="text-xs p-1 rounded-md text-gray-400 dark:text-surface-500 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
           </div>
           {/* Right: primary actions */}
           <div className="flex items-center gap-1.5">
@@ -278,6 +285,60 @@ export default function JobCard({ job, onApply, onScore, onDelete, onTailor, onB
             <div className="p-4">
               <pre className="text-sm text-gray-700 dark:text-surface-200 whitespace-pre-wrap font-sans leading-relaxed">{job.extra_outputs.cold_message}</pre>
             </div>
+          </div>
+        </div>
+      )}
+      {showEdit && (
+        <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          role="dialog" aria-modal="true" onClick={() => setShowEdit(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setShowEdit(false) }}>
+          <div className="bg-white dark:bg-surface-800 rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg p-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Edit Job</h3>
+              <button onClick={() => setShowEdit(false)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-surface-700 rounded-lg"><X className="w-4 h-4 text-gray-400" /></button>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault(); setEditSaving(true)
+              try {
+                const payload = { title: editData.title, company: editData.company, location: editData.location || null, description: editData.description || null, skills: editData.skills ? editData.skills.split(',').map(s => s.trim()).filter(Boolean) : [] }
+                await api.jobs.update(job._id, payload)
+                Object.assign(job, payload, { skills: payload.skills })
+                setShowEdit(false)
+              } finally { setEditSaving(false) }
+            }} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Title</label>
+                  <input type="text" value={editData.title} onChange={e => setEditData(d => ({ ...d, title: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Company</label>
+                  <input type="text" value={editData.company} onChange={e => setEditData(d => ({ ...d, company: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Location</label>
+                <input type="text" value={editData.location} onChange={e => setEditData(d => ({ ...d, location: e.target.value }))}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Skills (comma-separated)</label>
+                <input type="text" value={editData.skills} onChange={e => setEditData(d => ({ ...d, skills: e.target.value }))}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Description</label>
+                <textarea value={editData.description} onChange={e => setEditData(d => ({ ...d, description: e.target.value }))} rows={5}
+                  placeholder="Paste or edit job description..."
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y" />
+              </div>
+              <button type="submit" disabled={editSaving}
+                className="w-full py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-50">
+                {editSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </form>
           </div>
         </div>
       )}

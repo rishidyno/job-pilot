@@ -95,6 +95,11 @@ class JobUpdate(BaseModel):
     Schema for updating an existing job.
     All fields are optional — only provided fields will be updated.
     """
+    title: Optional[str] = None
+    company: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    skills: Optional[List[str]] = None
     status: Optional[JobStatus] = None
     match_score: Optional[int] = Field(None, ge=0, le=100)
     match_reasoning: Optional[str] = None

@@ -156,13 +156,12 @@ export default function AddJobModal({ onAdd, onClose }) {
                 placeholder="Java, Spring Boot, MongoDB"
                 className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
-            {description && (
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Description (auto-extracted)</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y" />
-              </div>
-            )}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-surface-400 mb-1">Description</label>
+              <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
+                placeholder="Paste the job description here..."
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-surface-700 border border-gray-200 dark:border-surface-600 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y" />
+            </div>
 
             <button type="submit" disabled={saving || !title || !company}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-50 mt-2">
